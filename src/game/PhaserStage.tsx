@@ -1,14 +1,22 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 import { AstrolabeScene } from './AstrolabeScene'
-import type { GameSettingsRef } from './astrolabeModel'
+import type { ControlKey, GameSettingsRef } from './astrolabeModel'
+
+type ValuePatch = Partial<Record<ControlKey, number>>
 
 type PhaserStageProps = {
   settingsRef: GameSettingsRef
+  onValuePatch: (patch: ValuePatch) => void
 }
 
-export function PhaserStage({ settingsRef }: PhaserStageProps) {
+export function PhaserStage({ settingsRef, onValuePatch }: PhaserStageProps) {
   const parentRef = useRef<HTMLDivElement | null>(null)
+  const onValuePatchRef = useRef(onValuePatch)
+
+  useEffect(() => {
+    onValuePatchRef.current = onValuePatch
+  }, [onValuePatch])
 
   useEffect(() => {
     if (!parentRef.current) return
@@ -27,7 +35,7 @@ export function PhaserStage({ settingsRef }: PhaserStageProps) {
         antialias: true,
         pixelArt: false,
       },
-      scene: [new AstrolabeScene(settingsRef)],
+      scene: [new AstrolabeScene(settingsRef, (patch) => onValuePatchRef.current(patch))],
     })
 
     return () => {

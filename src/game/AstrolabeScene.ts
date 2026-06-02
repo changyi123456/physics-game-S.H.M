@@ -1,9 +1,33 @@
 import Phaser from 'phaser'
-import type { ChallengeId, GameSettingsRef } from './astrolabeModel'
+import { challengeMap, type ChallengeId, type ControlKey, type GameSettingsRef } from './astrolabeModel'
 
 type Star = { x: number; y: number; size: number; phase: number; drift: number }
 type TrailPoint = { x: number; y: number; life: number }
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; size: number; color: number }
+type ValuePatch = Partial<Record<ControlKey, number>>
+type ValuePatchHandler = (patch: ValuePatch) => void
+type DragMode =
+  | 'orbit-launch'
+  | 'spring-block'
+  | 'pendulum-bob'
+type DragState = {
+  id: ChallengeId
+  mode: DragMode
+  startX: number
+  startY: number
+  x: number
+  y: number
+}
+type ProbeTrailPoint = { x: number; y: number }
+type SlingshotProbe = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  launched: boolean
+  hit: boolean
+  trail: ProbeTrailPoint[]
+}
 type ChallengeTone = {
   primary: number
   secondary: number
@@ -30,6 +54,7 @@ const challengeTones: Record<ChallengeId, ChallengeTone> = {
 
 export class AstrolabeScene extends Phaser.Scene {
   private settingsRef: GameSettingsRef
+  private applyValuePatch: ValuePatchHandler
   private backdrop!: Phaser.GameObjects.Graphics
   private trail!: Phaser.GameObjects.Graphics
   private world!: Phaser.GameObjects.Graphics
@@ -46,10 +71,13 @@ export class AstrolabeScene extends Phaser.Scene {
   private lastHeight = 0
   private previousCompleted = false
   private previousId = ''
+  private drag?: DragState
+  private slingshot?: SlingshotProbe
 
-  constructor(settingsRef: GameSettingsRef) {
+  constructor(settingsRef: GameSettingsRef, applyValuePatch: ValuePatchHandler) {
     super('AstrolabeScene')
     this.settingsRef = settingsRef
+    this.applyValuePatch = applyValuePatch
   }
 
   create() {
@@ -61,6 +89,11 @@ export class AstrolabeScene extends Phaser.Scene {
     this.fx = this.add.graphics()
     this.particles = this.add.graphics()
     this.vignette = this.add.graphics()
+    this.input.setDefaultCursor('crosshair')
+    this.input.on('pointerdown', this.handlePointerDown, this)
+    this.input.on('pointermove', this.handlePointerMove, this)
+    this.input.on('pointerup', this.handlePointerUp, this)
+    this.input.on('pointerupoutside', this.handlePointerUp, this)
   }
 
   update(time: number, delta: number) {
@@ -80,6 +113,8 @@ export class AstrolabeScene extends Phaser.Scene {
     } else if (settings.challengeId !== this.previousId) {
       this.previousId = settings.challengeId
       this.trails = []
+      this.drag = undefined
+      this.slingshot = undefined
       this.angle = -Math.PI / 2
       this.phase = 0
       this.cameras.main.flash(300, 56, 189, 248, true)
@@ -91,8 +126,9 @@ export class AstrolabeScene extends Phaser.Scene {
     }
     this.previousCompleted = settings.completed
 
-    this.phase += dt
+    if (!this.isTimedCaptureDrag()) this.phase += dt
     this.angle += this.activeOmega(settings) * dt
+    this.updateSlingshotProbe(dt, width, height)
 
     this.drawBackdrop(width, height, time, settings.sync)
     this.trail.clear()
@@ -105,7 +141,7 @@ export class AstrolabeScene extends Phaser.Scene {
 
     switch (settings.challengeId) {
       case 'orbit':
-        this.drawOrbit(width, height, time)
+        this.drawGravitySlingshot(width, height, time)
         break
       case 'force':
         this.drawForceTower(width, height, time)
@@ -120,6 +156,7 @@ export class AstrolabeScene extends Phaser.Scene {
         this.drawPendulumTower(width, height)
         break
     }
+    this.drawInteractionOverlay(width, height, time)
     this.drawParticles(dt)
     if (settings.completed) this.drawCompletionBloom(width, height, time)
     this.drawRpgLayer(width, height, time)
@@ -139,6 +176,305 @@ export class AstrolabeScene extends Phaser.Scene {
       x: width < 820 ? width * 0.5 : width * 0.44,
       y: height < 680 ? height * 0.48 : height * 0.53,
       scale: Math.min(width / 1180, height / 760),
+    }
+  }
+
+  private isTimedCaptureDrag() {
+    return (
+      this.drag?.id === this.settingsRef.current.challengeId &&
+      (this.drag.mode === 'spring-block' || this.drag.mode === 'pendulum-bob')
+    )
+  }
+
+  private currentSpringBlock(cx: number, cy: number, scale: number) {
+    const values = this.settingsRef.current.values
+    const period = 2 * Math.PI * Math.sqrt(values.mass / values.springK)
+    const omega = (2 * Math.PI) / period
+    const displacement = Math.cos(this.phase * omega) * values.amplitude * scale
+    return { x: cx + displacement, y: cy, displacement, omega }
+  }
+
+  private currentPendulumBob(cx: number, cy: number, scale: number) {
+    const values = this.settingsRef.current.values
+    const pivotY = cy - 170 * scale
+    const length = values.length * 0.82 * scale
+    const frequency = Math.sqrt(values.gravity / (values.length / 100))
+    const theta = rad(values.angle) * Math.cos(this.phase * frequency)
+    return {
+      x: cx + Math.sin(theta) * length,
+      y: pivotY + Math.cos(theta) * length,
+      pivotY,
+      length,
+      theta,
+      frequency,
+    }
+  }
+
+  private pendulumDragPosition(pointerX: number, pointerY: number, cx: number, pivotY: number, scale: number) {
+    const length = this.settingsRef.current.values.length * 0.82 * scale
+    const dx = pointerX - cx
+    const dy = Math.max(1, pointerY - pivotY)
+    const theta = Phaser.Math.Clamp(Math.atan2(dx, dy), -rad(30), rad(30))
+
+    return {
+      x: cx + Math.sin(theta) * length,
+      y: pivotY + Math.cos(theta) * length,
+      theta,
+    }
+  }
+
+  private handlePointerDown(pointer: Phaser.Input.Pointer) {
+    const width = this.cameras.main.width
+    const height = this.cameras.main.height
+    const x = pointer.x
+    const y = pointer.y
+    const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
+    const mode = this.pickDragMode(this.settingsRef.current.challengeId, x, y, cx, cy, scale, width, height)
+
+    if (!mode) return
+
+    let dragX = x
+    let dragY = y
+    if (mode === 'spring-block') {
+      const block = this.currentSpringBlock(cx, cy, scale)
+      dragX = block.x
+      dragY = block.y
+    } else if (mode === 'pendulum-bob') {
+      const bob = this.currentPendulumBob(cx, cy, scale)
+      dragX = bob.x
+      dragY = bob.y
+    }
+
+    this.drag = {
+      id: this.settingsRef.current.challengeId,
+      mode,
+      startX: x,
+      startY: y,
+      x: dragX,
+      y: dragY,
+    }
+    if (mode === 'orbit-launch') this.updateDragPatch(width, height)
+    this.cameras.main.shake(70, 0.0008)
+  }
+
+  private handlePointerMove(pointer: Phaser.Input.Pointer) {
+    if (!this.drag) return
+
+    this.drag.x = pointer.x
+    this.drag.y = pointer.y
+    this.updateDragPatch(this.cameras.main.width, this.cameras.main.height)
+  }
+
+  private handlePointerUp(pointer: Phaser.Input.Pointer) {
+    if (!this.drag) return
+
+    if (this.drag.mode === 'orbit-launch') {
+      this.drag.x = pointer.x
+      this.drag.y = pointer.y
+      this.updateDragPatch(this.cameras.main.width, this.cameras.main.height)
+      this.releaseSlingshotProbe()
+    } else {
+      this.drag.x = pointer.x
+      this.drag.y = pointer.y
+      this.updateDragPatch(this.cameras.main.width, this.cameras.main.height)
+      this.commitTimedCapture(this.cameras.main.width, this.cameras.main.height)
+    }
+    this.drag = undefined
+  }
+
+  private pickDragMode(
+    id: ChallengeId,
+    x: number,
+    y: number,
+    cx: number,
+    cy: number,
+    scale: number,
+    width: number,
+    height: number,
+  ): DragMode | undefined {
+    if (x < 18 || x > width - 18 || y < 54 || y > height - 36) return undefined
+
+    switch (id) {
+      case 'orbit':
+        return this.distance(x, y, this.launcherPosition(cx, cy, scale).x, this.launcherPosition(cx, cy, scale).y) < 78 * scale
+          ? 'orbit-launch'
+          : undefined
+      case 'force':
+        return undefined
+      case 'refcircle':
+        return undefined
+      case 'spring':
+        return this.distance(x, y, this.currentSpringBlock(cx, cy, scale).x, this.currentSpringBlock(cx, cy, scale).y) < 62 * scale
+          ? 'spring-block'
+          : undefined
+      case 'pendulum':
+        return this.distance(x, y, this.currentPendulumBob(cx, cy, scale).x, this.currentPendulumBob(cx, cy, scale).y) < 58 * scale
+          ? 'pendulum-bob'
+          : undefined
+    }
+  }
+
+  private updateDragPatch(width: number, height: number) {
+    if (!this.drag || this.drag.id !== this.settingsRef.current.challengeId) return
+
+    const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
+    const drag = this.drag
+
+    switch (drag.mode) {
+      case 'orbit-launch': {
+        const launcher = this.launcherPosition(cx, cy, scale)
+        const pull = this.clampToRadius(drag.x, drag.y, launcher.x, launcher.y, 88 * scale)
+        drag.x = pull.x
+        drag.y = pull.y
+        this.slingshot = {
+          x: pull.x,
+          y: pull.y,
+          vx: 0,
+          vy: 0,
+          launched: false,
+          hit: false,
+          trail: [],
+        }
+        break
+      }
+      case 'spring-block':
+        drag.x = Phaser.Math.Clamp(drag.x, cx - 150 * scale, cx + 150 * scale)
+        drag.y = cy
+        break
+      case 'pendulum-bob':
+        {
+          const pivotY = cy - 170 * scale
+          const dragged = this.pendulumDragPosition(drag.x, drag.y, cx, pivotY, scale)
+          drag.x = dragged.x
+          drag.y = dragged.y
+        }
+        break
+    }
+  }
+
+  private commitTimedCapture(width: number, height: number) {
+    if (!this.drag || this.drag.id !== this.settingsRef.current.challengeId) return
+
+    const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
+    const drag = this.drag
+    const values = this.settingsRef.current.values
+
+    if (drag.mode === 'spring-block') {
+      const period = 2 * Math.PI * Math.sqrt(values.mass / values.springK)
+      const omega = (2 * Math.PI) / period
+      const amplitude = Math.abs(drag.x - cx) / scale
+      this.phase = drag.x >= cx ? 0 : Math.PI / omega
+      this.emitValuePatch({ amplitude })
+      return
+    }
+
+    if (drag.mode === 'pendulum-bob') {
+      const pivotY = cy - 170 * scale
+      const dx = drag.x - cx
+      const dy = Math.max(24 * scale, drag.y - pivotY)
+      const angle = Math.abs(Math.atan2(dx, dy)) * (180 / Math.PI)
+      const frequency = Math.sqrt(values.gravity / (values.length / 100))
+      this.phase = dx >= 0 ? 0 : Math.PI / frequency
+      this.emitValuePatch({ angle })
+    }
+  }
+
+  private emitValuePatch(rawPatch: ValuePatch) {
+    const id = this.settingsRef.current.challengeId
+    const patch: ValuePatch = {}
+    let hasPatch = false
+
+    ;(Object.entries(rawPatch) as [ControlKey, number | undefined][]).forEach(([key, value]) => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return
+
+      const control = challengeMap[id].controls.find((entry) => entry.key === key)
+      if (!control) return
+
+      patch[key] = Phaser.Math.Clamp(value, control.min, control.max)
+      hasPatch = true
+    })
+
+    if (hasPatch) this.applyValuePatch(patch)
+  }
+
+  private distance(x1: number, y1: number, x2: number, y2: number) {
+    return Math.hypot(x2 - x1, y2 - y1)
+  }
+
+  private launcherPosition(cx: number, cy: number, scale: number) {
+    return { x: cx - 350 * scale, y: cy + 148 * scale }
+  }
+
+  private targetPosition(cx: number, cy: number, scale: number) {
+    return { x: cx + 350 * scale, y: cy - 130 * scale }
+  }
+
+  private clampToRadius(x: number, y: number, cx: number, cy: number, radius: number) {
+    const dx = x - cx
+    const dy = y - cy
+    const distance = Math.max(1, Math.hypot(dx, dy))
+    const clamped = Math.min(distance, radius)
+    return {
+      x: cx + (dx / distance) * clamped,
+      y: cy + (dy / distance) * clamped,
+    }
+  }
+
+  private releaseSlingshotProbe() {
+    if (!this.slingshot) return
+
+    const { x: cx, y: cy, scale } = this.sceneCenter(this.cameras.main.width, this.cameras.main.height)
+    const launcher = this.launcherPosition(cx, cy, scale)
+    const pull = this.distance(this.slingshot.x, this.slingshot.y, launcher.x, launcher.y)
+
+    if (pull < 8 * scale) return
+
+    this.slingshot = {
+      ...this.slingshot,
+      vx: (launcher.x - this.slingshot.x) * 4.35,
+      vy: (launcher.y - this.slingshot.y) * 4.35,
+      launched: true,
+      trail: [{ x: this.slingshot.x, y: this.slingshot.y }],
+    }
+    this.emitValuePatch({ shotScore: 0 })
+  }
+
+  private updateSlingshotProbe(dt: number, width: number, height: number) {
+    if (this.settingsRef.current.challengeId !== 'orbit' || !this.slingshot?.launched || this.slingshot.hit) return
+
+    const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
+    const dx = cx - this.slingshot.x
+    const dy = cy - this.slingshot.y
+    const distanceSquared = Math.max(1800 * scale, dx * dx + dy * dy)
+    const distance = Math.sqrt(distanceSquared)
+    const gravity = 1560000 * scale
+    const ax = (dx / distance) * (gravity / distanceSquared)
+    const ay = (dy / distance) * (gravity / distanceSquared)
+
+    this.slingshot.vx += ax * dt
+    this.slingshot.vy += ay * dt
+    this.slingshot.x += this.slingshot.vx * dt
+    this.slingshot.y += this.slingshot.vy * dt
+    this.slingshot.trail.push({ x: this.slingshot.x, y: this.slingshot.y })
+    this.slingshot.trail = this.slingshot.trail.slice(-90)
+
+    const target = this.targetPosition(cx, cy, scale)
+    if (this.distance(this.slingshot.x, this.slingshot.y, target.x, target.y) < 14 * scale) {
+      this.slingshot.hit = true
+      this.slingshot.launched = false
+      this.emitSpark(target.x, target.y, 0xfbbf24, 40, 220 * scale, 4.2 * scale)
+      this.cameras.main.flash(360, 251, 191, 36, true)
+      this.emitValuePatch({ shotScore: 1 })
+    }
+
+    const margin = 180 * scale
+    if (
+      this.slingshot.x < -margin ||
+      this.slingshot.x > width + margin ||
+      this.slingshot.y < -margin ||
+      this.slingshot.y > height + margin
+    ) {
+      this.slingshot = undefined
     }
   }
 
@@ -194,18 +530,31 @@ export class AstrolabeScene extends Phaser.Scene {
       this.world.strokeRoundedRect(pillarX - 12 * scale, deckY - 118 * scale, 24 * scale, 110 * scale, 8 * scale)
     }
 
-    this.world.lineStyle(2, tone.primary, 0.13)
-    for (let r = 180 * scale; r <= 360 * scale; r += 46 * scale) {
-      this.world.strokeCircle(cx, cy, r)
-    }
+    if (this.settingsRef.current.challengeId !== 'orbit') {
+      this.world.lineStyle(2, tone.primary, 0.13)
+      for (let r = 180 * scale; r <= 360 * scale; r += 46 * scale) {
+        this.world.strokeCircle(cx, cy, r)
+      }
 
-    this.world.lineStyle(1, tone.secondary, 0.12 + pulse * 0.05)
-    for (let i = 0; i < 10; i += 1) {
-      const a = time / 3200 + (Math.PI * 2 * i) / 10
-      this.world.beginPath()
-      this.world.moveTo(cx + Math.cos(a) * 118 * scale, cy + Math.sin(a) * 118 * scale)
-      this.world.lineTo(cx + Math.cos(a) * 346 * scale, cy + Math.sin(a) * 346 * scale)
-      this.world.strokePath()
+      this.world.lineStyle(1, tone.secondary, 0.12 + pulse * 0.05)
+      for (let i = 0; i < 10; i += 1) {
+        const a = time / 3200 + (Math.PI * 2 * i) / 10
+        this.world.beginPath()
+        this.world.moveTo(cx + Math.cos(a) * 118 * scale, cy + Math.sin(a) * 118 * scale)
+        this.world.lineTo(cx + Math.cos(a) * 346 * scale, cy + Math.sin(a) * 346 * scale)
+        this.world.strokePath()
+      }
+    } else {
+      this.world.lineStyle(2, tone.primary, 0.11)
+      for (let i = 0; i < 7; i += 1) {
+        const y = cy - 210 * scale + i * 70 * scale
+        this.world.beginPath()
+        this.world.moveTo(cx - 380 * scale, y)
+        this.world.lineTo(cx - 128 * scale, y + Math.sin(time / 900 + i) * 14 * scale)
+        this.world.lineTo(cx + 128 * scale, y - Math.cos(time / 880 + i) * 18 * scale)
+        this.world.lineTo(cx + 380 * scale, y + Math.sin(time / 920 + i) * 12 * scale)
+        this.world.strokePath()
+      }
     }
 
     this.drawChallengeSetDressing(cx, cy, scale, time, tone)
@@ -215,14 +564,19 @@ export class AstrolabeScene extends Phaser.Scene {
     const phase = time / 1000
     switch (this.settingsRef.current.challengeId) {
       case 'orbit':
-        this.world.lineStyle(2, tone.secondary, 0.18)
-        this.world.strokeCircle(cx, cy, 258 * scale + Math.sin(phase) * 4 * scale)
-        for (let i = 0; i < 10; i += 1) {
-          const a = phase * 0.18 + (Math.PI * 2 * i) / 10
-          const x = cx + Math.cos(a) * 300 * scale
-          const y = cy + Math.sin(a) * 300 * scale
-          this.world.fillStyle(i % 2 === 0 ? tone.primary : tone.secondary, 0.18)
-          this.world.fillCircle(x, y, 4 * scale)
+        this.world.lineStyle(2, tone.secondary, 0.16)
+        for (let i = 0; i < 5; i += 1) {
+          const y = cy - 170 * scale + i * 68 * scale
+          this.drawCubicPath(
+            cx - 350 * scale,
+            y,
+            cx - 160 * scale,
+            y + Math.sin(phase + i) * 36 * scale,
+            cx + 110 * scale,
+            y - Math.cos(phase + i) * 46 * scale,
+            cx + 350 * scale,
+            y + Math.sin(phase * 0.7 + i) * 24 * scale,
+          )
         }
         break
       case 'force':
@@ -370,23 +724,183 @@ export class AstrolabeScene extends Phaser.Scene {
     }
   }
 
-  private drawOrbit(width: number, height: number, time: number) {
+  private drawGravitySlingshot(width: number, height: number, time: number) {
     const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
-    const values = this.settingsRef.current.values
-    const radius = values.radius * scale
-    const px = cx + Math.cos(this.angle) * radius
-    const py = cy + Math.sin(this.angle) * radius
-    this.pushTrail(px, py, 0x67e8f9)
-    this.emitSpark(px, py, 0x67e8f9, 1, 48 * scale, 2.6 * scale)
+    const launcher = this.launcherPosition(cx, cy, scale)
+    const target = this.targetPosition(cx, cy, scale)
+    const probe = this.slingshot ?? {
+      x: launcher.x,
+      y: launcher.y,
+      vx: 0,
+      vy: 0,
+      launched: false,
+      hit: false,
+      trail: [],
+    }
+    const pulse = 0.5 + Math.sin(time / 280) * 0.5
 
-    this.drawAstrolabe(cx, cy, radius, time, 0xfbbf24)
-    this.drawCoreGlow(cx, cy, 70 * scale, 0x38bdf8)
-    this.drawPolishedOrb(this.world, px, py, 12 * scale, 0xf59e0b, 0xfef3c7, time, 1.15)
+    this.world.fillStyle(0x020617, 0.74)
+    this.world.fillRoundedRect(launcher.x - 68 * scale, launcher.y + 34 * scale, 136 * scale, 30 * scale, 8 * scale)
+    this.world.fillRoundedRect(target.x - 46 * scale, target.y + 34 * scale, 92 * scale, 24 * scale, 8 * scale)
+    this.world.lineStyle(2, 0x67e8f9, 0.18)
+    this.drawCubicPath(
+      launcher.x + 48 * scale,
+      launcher.y + 48 * scale,
+      cx - 126 * scale,
+      cy + 116 * scale,
+      cx + 112 * scale,
+      cy - 116 * scale,
+      target.x - 48 * scale,
+      target.y + 48 * scale,
+    )
 
-    const tangent = this.angle + Math.PI / 2
-    this.drawArrow(px, py, px + Math.cos(tangent) * 82 * scale, py + Math.sin(tangent) * 82 * scale, 0x22c55e)
-    this.drawArrow(px, py, px - Math.cos(this.angle) * 92 * scale, py - Math.sin(this.angle) * 92 * scale, 0xfb7185)
-    this.drawPortal(width, height, time)
+    this.world.fillStyle(0x020617, 0.82)
+    this.world.fillCircle(cx, cy, 44 * scale)
+    this.world.fillStyle(0x38bdf8, 0.1 + pulse * 0.05)
+    this.world.fillCircle(cx, cy, 94 * scale)
+    for (let i = 0; i < 7; i += 1) {
+      const turn = time / 620 + i * 0.72
+      const arm = 38 * scale + i * 11 * scale
+      this.world.lineStyle(2, i % 2 === 0 ? 0x67e8f9 : 0xfbbf24, 0.18 + pulse * 0.08)
+      this.world.beginPath()
+      for (let step = 0; step < 22; step += 1) {
+        const t = step / 21
+        const a = turn + t * 1.55
+        const r = arm + t * 42 * scale
+        const x = cx + Math.cos(a) * r
+        const y = cy + Math.sin(a) * r * 0.68
+        if (step === 0) this.world.moveTo(x, y)
+        else this.world.lineTo(x, y)
+      }
+      this.world.strokePath()
+    }
+    this.drawCoreGlow(cx, cy, 28 * scale, 0x38bdf8)
+
+    this.drawSlingshotRig(launcher.x, launcher.y, scale, time)
+    this.drawRiftTarget(target.x, target.y, scale, time, this.settingsRef.current.completed)
+
+    if (probe.trail.length > 1) {
+      probe.trail.forEach((point, index) => {
+        const age = index / Math.max(1, probe.trail.length - 1)
+        this.trail.fillStyle(0x67e8f9, 0.05 + age * 0.2)
+        this.trail.fillCircle(point.x, point.y, 2 * scale + age * 4 * scale)
+      })
+    }
+
+    if (!probe.launched && !probe.hit) {
+      this.world.lineStyle(4, 0xfbbf24, 0.28)
+      this.world.beginPath()
+      this.world.moveTo(launcher.x - 24 * scale, launcher.y + 14 * scale)
+      this.world.lineTo(probe.x, probe.y)
+      this.world.lineTo(launcher.x + 24 * scale, launcher.y + 14 * scale)
+      this.world.strokePath()
+    }
+
+    if (this.drag?.mode === 'orbit-launch') {
+      this.drawSlingshotPrediction(probe.x, probe.y, (launcher.x - probe.x) * 4.35, (launcher.y - probe.y) * 4.35, cx, cy, scale)
+    }
+
+    this.drawPolishedOrb(
+      this.world,
+      probe.hit ? target.x : probe.x,
+      probe.hit ? target.y : probe.y,
+      11 * scale,
+      probe.hit ? 0xfbbf24 : 0x67e8f9,
+      0xfef3c7,
+      time,
+      1.2,
+    )
+    if (probe.launched) this.emitSpark(probe.x, probe.y, 0x67e8f9, 1, 42 * scale, 2 * scale)
+  }
+
+  private drawSlingshotRig(x: number, y: number, scale: number, time: number) {
+    const pulse = 0.5 + Math.sin(time / 240) * 0.5
+
+    this.world.fillStyle(0xfbbf24, 0.05 + pulse * 0.03)
+    this.world.fillEllipse(x, y + 6 * scale, 112 * scale, 90 * scale)
+    this.world.fillStyle(0x020617, 0.48)
+    this.world.fillEllipse(x, y + 38 * scale, 104 * scale, 22 * scale)
+
+    this.world.fillStyle(0x0f172a, 0.92)
+    this.world.fillRoundedRect(x - 34 * scale, y + 8 * scale, 68 * scale, 30 * scale, 8 * scale)
+    this.world.fillStyle(0xfbbf24, 0.22)
+    this.world.fillRoundedRect(x - 26 * scale, y + 14 * scale, 52 * scale, 8 * scale, 4 * scale)
+    this.world.lineStyle(2, 0xf8fafc, 0.28)
+    this.world.strokeRoundedRect(x - 34 * scale, y + 8 * scale, 68 * scale, 30 * scale, 8 * scale)
+
+    this.world.lineStyle(8, 0xfbbf24, 0.82)
+    this.world.beginPath()
+    this.world.moveTo(x - 25 * scale, y + 18 * scale)
+    this.world.lineTo(x - 16 * scale, y - 15 * scale)
+    this.world.moveTo(x + 25 * scale, y + 18 * scale)
+    this.world.lineTo(x + 16 * scale, y - 15 * scale)
+    this.world.strokePath()
+
+    this.world.lineStyle(3, 0xf8fafc, 0.36)
+    this.world.beginPath()
+    this.world.moveTo(x - 25 * scale, y + 18 * scale)
+    this.world.lineTo(x - 16 * scale, y - 15 * scale)
+    this.world.moveTo(x + 25 * scale, y + 18 * scale)
+    this.world.lineTo(x + 16 * scale, y - 15 * scale)
+    this.world.strokePath()
+
+    this.world.fillStyle(0x020617, 0.94)
+    this.world.fillCircle(x - 16 * scale, y - 15 * scale, 8 * scale)
+    this.world.fillCircle(x + 16 * scale, y - 15 * scale, 8 * scale)
+    this.world.fillStyle(0x67e8f9, 0.72 + pulse * 0.2)
+    this.world.fillCircle(x - 16 * scale, y - 15 * scale, 4 * scale)
+    this.world.fillCircle(x + 16 * scale, y - 15 * scale, 4 * scale)
+
+    this.world.lineStyle(2, 0x67e8f9, 0.28 + pulse * 0.18)
+    this.world.strokeCircle(x, y + 22 * scale, 20 * scale)
+    this.world.fillStyle(0x67e8f9, 0.12 + pulse * 0.08)
+    this.world.fillCircle(x, y + 22 * scale, 10 * scale)
+  }
+
+  private drawRiftTarget(x: number, y: number, scale: number, time: number, completed: boolean) {
+    const pulse = 0.5 + Math.sin(time / 180) * 0.5
+    const primary = completed ? 0xfbbf24 : 0x67e8f9
+    const accent = completed ? 0xfef3c7 : 0xfbbf24
+
+    this.world.fillStyle(primary, 0.05 + pulse * 0.04)
+    this.world.fillCircle(x, y, 32 * scale)
+    this.world.lineStyle(2, primary, 0.18 + pulse * 0.16)
+    this.world.strokeCircle(x, y, 21 * scale + pulse * 2 * scale)
+
+    this.world.fillStyle(0x020617, 0.9)
+    this.world.beginPath()
+    this.world.moveTo(x, y - 20 * scale)
+    this.world.lineTo(x + 18 * scale, y)
+    this.world.lineTo(x, y + 20 * scale)
+    this.world.lineTo(x - 18 * scale, y)
+    this.world.lineTo(x, y - 20 * scale)
+    this.world.fillPath()
+    this.world.lineStyle(3, accent, 0.68)
+    this.world.strokePath()
+
+    this.world.fillStyle(primary, 0.22 + pulse * 0.12)
+    this.world.beginPath()
+    this.world.moveTo(x, y - 11 * scale)
+    this.world.lineTo(x + 9 * scale, y)
+    this.world.lineTo(x, y + 11 * scale)
+    this.world.lineTo(x - 9 * scale, y)
+    this.world.lineTo(x, y - 11 * scale)
+    this.world.fillPath()
+
+    this.world.lineStyle(2, 0xf8fafc, 0.42)
+    this.world.beginPath()
+    this.world.moveTo(x - 28 * scale, y)
+    this.world.lineTo(x - 17 * scale, y)
+    this.world.moveTo(x + 17 * scale, y)
+    this.world.lineTo(x + 28 * scale, y)
+    this.world.moveTo(x, y - 28 * scale)
+    this.world.lineTo(x, y - 17 * scale)
+    this.world.moveTo(x, y + 17 * scale)
+    this.world.lineTo(x, y + 28 * scale)
+    this.world.strokePath()
+
+    this.world.fillStyle(completed ? 0xfbbf24 : 0x020617, 0.95)
+    this.world.fillCircle(x, y, 4 * scale)
   }
 
   private drawForceTower(width: number, height: number, time: number) {
@@ -459,12 +973,14 @@ export class AstrolabeScene extends Phaser.Scene {
 
   private drawSpringWorkshop(width: number, height: number, time: number) {
     const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
-    const values = this.settingsRef.current.values
-    const period = 2 * Math.PI * Math.sqrt(values.mass / values.springK)
-    const omega = (2 * Math.PI) / period
-    const x = Math.cos(this.phase * omega) * values.amplitude * scale
+    let x = this.currentSpringBlock(cx, cy, scale).displacement
     const baseX = cx - 210 * scale
     const y = cy
+
+    if (this.drag?.mode === 'spring-block') {
+      x = Phaser.Math.Clamp(this.drag.x - cx, -150 * scale, 150 * scale)
+    }
+
     this.emitSpark(cx + x, y, 0x5eead4, 1, 36 * scale, 2.6 * scale)
 
     this.world.lineStyle(5, 0x64748b, 0.42)
@@ -490,12 +1006,16 @@ export class AstrolabeScene extends Phaser.Scene {
 
   private drawPendulumTower(width: number, height: number) {
     const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
-    const values = this.settingsRef.current.values
-    const length = values.length * 0.82 * scale
-    const theta = rad(values.angle) * Math.cos(this.phase * (2 * Math.PI) / (2 * Math.PI * Math.sqrt((values.length / 100) / values.gravity)))
-    const pivotY = cy - 170 * scale
-    const bobX = cx + Math.sin(theta) * length
-    const bobY = pivotY + Math.cos(theta) * length
+    const bob = this.currentPendulumBob(cx, cy, scale)
+    const pivotY = bob.pivotY
+    let bobX = bob.x
+    let bobY = bob.y
+
+    if (this.drag?.mode === 'pendulum-bob') {
+      bobX = this.drag.x
+      bobY = this.drag.y
+    }
+
     this.emitSpark(bobX, bobY, 0xfbbf24, 1, 44 * scale, 2.4 * scale)
 
     this.world.lineStyle(2, 0x64748b, 0.38)
@@ -511,6 +1031,160 @@ export class AstrolabeScene extends Phaser.Scene {
     this.drawPolishedOrb(this.world, cx, pivotY, 8 * scale, 0x5eead4, 0xf8fafc, this.phase * 1000, 0.8)
     this.drawArrow(bobX, bobY, bobX, bobY + 76 * scale, 0xfb7185)
   }
+
+  private drawInteractionOverlay(width: number, height: number, time: number) {
+    const { x: cx, y: cy, scale } = this.sceneCenter(width, height)
+    const tone = this.toneFor()
+
+    switch (this.settingsRef.current.challengeId) {
+      case 'orbit': {
+        const launcher = this.launcherPosition(cx, cy, scale)
+        const target = this.targetPosition(cx, cy, scale)
+        this.drawReticle(launcher.x, launcher.y, 10 * scale, tone.secondary, time)
+        this.drawReticle(target.x, target.y, 6 * scale, tone.accent, time, 0.45)
+        break
+      }
+      case 'force':
+        break
+      case 'refcircle':
+        break
+      case 'spring': {
+        const block = this.currentSpringBlock(cx, cy, scale)
+        this.fx.lineStyle(2, tone.secondary, 0.28)
+        this.fx.beginPath()
+        this.fx.moveTo(cx - 110 * scale, cy - 88 * scale)
+        this.fx.lineTo(cx - 110 * scale, cy + 88 * scale)
+        this.fx.moveTo(cx + 110 * scale, cy - 88 * scale)
+        this.fx.lineTo(cx + 110 * scale, cy + 88 * scale)
+        this.fx.strokePath()
+        this.drawReticle(cx + 110 * scale, cy, 11 * scale, tone.secondary, time)
+        this.drawReticle(block.x, block.y, 18 * scale, tone.primary, time, 0.56)
+        break
+      }
+      case 'pendulum': {
+        const bob = this.currentPendulumBob(cx, cy, scale)
+        const pivotY = bob.pivotY
+        const length = 99 * 0.82 * scale
+        const theta = rad(8)
+        const targetX = cx + Math.sin(theta) * length
+        const targetY = pivotY + Math.cos(theta) * length
+        this.fx.lineStyle(2, tone.secondary, 0.3)
+        this.fx.beginPath()
+        this.fx.arc(cx, pivotY, length, Math.PI / 2 - theta, Math.PI / 2 + theta, false)
+        this.fx.strokePath()
+        this.drawReticle(targetX, targetY, 11 * scale, tone.secondary, time)
+        this.drawReticle(bob.x, bob.y, 18 * scale, tone.primary, time, 0.56)
+        break
+      }
+    }
+
+    this.drawDragPreview(cx, cy, scale, time)
+  }
+
+  private drawDragPreview(cx: number, cy: number, scale: number, time: number) {
+    const drag = this.drag
+    if (!drag || drag.id !== this.settingsRef.current.challengeId) return
+
+    const tone = this.toneFor()
+    this.drawReticle(drag.x, drag.y, 12 * scale, tone.accent, time, 0.9)
+
+    switch (drag.mode) {
+      case 'orbit-launch':
+        this.drawArrow(drag.x, drag.y, this.launcherPosition(cx, cy, scale).x, this.launcherPosition(cx, cy, scale).y, tone.accent, 0.62)
+        break
+      case 'spring-block':
+        this.drawArrow(cx, cy, drag.x, cy, tone.secondary, 0.58)
+        this.fx.lineStyle(3, tone.secondary, 0.42)
+        this.fx.beginPath()
+        this.fx.moveTo(drag.x, cy - 72 * scale)
+        this.fx.lineTo(drag.x, cy + 72 * scale)
+        this.fx.strokePath()
+        break
+      case 'pendulum-bob': {
+        const pivotY = cy - 170 * scale
+        this.fx.lineStyle(4, tone.secondary, 0.66)
+        this.fx.beginPath()
+        this.fx.moveTo(cx, pivotY)
+        this.fx.lineTo(drag.x, drag.y)
+        this.fx.strokePath()
+        break
+      }
+    }
+  }
+
+  private drawCubicPath(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    segments = 28,
+  ) {
+    this.world.beginPath()
+    this.world.moveTo(x0, y0)
+    for (let i = 1; i <= segments; i += 1) {
+      const t = i / segments
+      const mt = 1 - t
+      const x = mt ** 3 * x0 + 3 * mt ** 2 * t * x1 + 3 * mt * t ** 2 * x2 + t ** 3 * x3
+      const y = mt ** 3 * y0 + 3 * mt ** 2 * t * y1 + 3 * mt * t ** 2 * y2 + t ** 3 * y3
+      this.world.lineTo(x, y)
+    }
+    this.world.strokePath()
+  }
+
+  private drawReticle(x: number, y: number, radius: number, color: number, time: number, alpha = 0.72) {
+    const pulse = 0.5 + Math.sin(time / 180) * 0.5
+    this.fx.lineStyle(2, color, alpha * (0.62 + pulse * 0.24))
+    this.fx.strokeCircle(x, y, radius + pulse * 4)
+    this.fx.lineStyle(1, 0xf8fafc, alpha * 0.42)
+    this.fx.beginPath()
+    this.fx.moveTo(x - radius * 1.7, y)
+    this.fx.lineTo(x - radius * 0.7, y)
+    this.fx.moveTo(x + radius * 0.7, y)
+    this.fx.lineTo(x + radius * 1.7, y)
+    this.fx.moveTo(x, y - radius * 1.7)
+    this.fx.lineTo(x, y - radius * 0.7)
+    this.fx.moveTo(x, y + radius * 0.7)
+    this.fx.lineTo(x, y + radius * 1.7)
+    this.fx.strokePath()
+  }
+
+  private drawSlingshotPrediction(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    cx: number,
+    cy: number,
+    scale: number,
+  ) {
+    let px = x
+    let py = y
+    let pvx = vx
+    let pvy = vy
+    const gravity = 1560000 * scale
+    const dt = 0.026
+
+    this.fx.lineStyle(3, 0x67e8f9, 0.34)
+    this.fx.beginPath()
+    this.fx.moveTo(px, py)
+    for (let i = 0; i < 42; i += 1) {
+      const dx = cx - px
+      const dy = cy - py
+      const distanceSquared = Math.max(1800 * scale, dx * dx + dy * dy)
+      const distance = Math.sqrt(distanceSquared)
+      pvx += (dx / distance) * (gravity / distanceSquared) * dt
+      pvy += (dy / distance) * (gravity / distanceSquared) * dt
+      px += pvx * dt
+      py += pvy * dt
+      this.fx.lineTo(px, py)
+    }
+    this.fx.strokePath()
+  }
+
 
   private drawRpgLayer(width: number, height: number, time: number) {
     const settings = this.settingsRef.current
@@ -750,25 +1424,6 @@ export class AstrolabeScene extends Phaser.Scene {
     this.world.strokeCircle(cx, cy, 34)
     this.world.fillStyle(this.settingsRef.current.completed ? 0xfacc15 : 0x67e8f9, 0.92)
     this.world.fillCircle(cx, cy, 16)
-  }
-
-  private drawPortal(width: number, height: number, time: number, overrideX?: number, overrideY?: number) {
-    const scale = Math.min(width / 1180, height / 760)
-    const gateX = overrideX ?? (width < 820 ? width * 0.5 : width * 0.78)
-    const gateY = overrideY ?? (height < 680 ? height * 0.82 : height * 0.52)
-    const open = this.settingsRef.current.completed ? 1 : Math.max(0, (this.settingsRef.current.sync - 60) / 40)
-    this.fx.fillStyle(0x67e8f9, 0.05 + open * 0.16)
-    this.fx.fillEllipse(gateX, gateY, 112 * scale, 190 * scale)
-    this.fx.lineStyle(5, this.settingsRef.current.completed ? 0xfbbf24 : 0x22d3ee, 0.18 + open * 0.58)
-    for (let i = 0; i < 3; i += 1) {
-      const arcRadius = (50 + i * 22 + Math.sin(time / 420 + i) * 2) * scale
-      this.fx.beginPath()
-      this.fx.arc(gateX, gateY, arcRadius, -Math.PI * 0.45, Math.PI * 0.45, false)
-      this.fx.strokePath()
-      this.fx.beginPath()
-      this.fx.arc(gateX, gateY, arcRadius, Math.PI * 0.55, Math.PI * 1.45, false)
-      this.fx.strokePath()
-    }
   }
 
   private drawSpring(x1: number, y1: number, x2: number, y2: number, coils: number, amplitude: number, color: number) {

@@ -10,6 +10,7 @@ import {
   nextChallengeId,
   resetChallengeValues,
   type ChallengeId,
+  type ControlDefinition,
   type ControlKey,
   type GameSettings,
 } from './game/astrolabeModel'
@@ -59,10 +60,55 @@ type NpcDialogue = {
   solved: string
   fragment: string
 }
+type StagePosition = {
+  x: number
+  y: number
+}
+type GateStagePosition = StagePosition & {
+  scale: number
+  z: number
+}
 
-const saveKey = 'periodic-motion-rpg-v4'
+const saveKey = 'periodic-motion-rpg-v5'
 const firstChallenge = challenges[0]
 const heroArtUrl = `${import.meta.env.BASE_URL}hero-rpg.svg`
+const observerName = '觀測員艾菈'
+
+const clampValue = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+const gateStagePositions: Record<ChallengeId, GateStagePosition> = {
+  orbit: { x: 18, y: 32, scale: 0.78, z: 2 },
+  force: { x: 49, y: 38, scale: 0.9, z: 2 },
+  refcircle: { x: 80, y: 31, scale: 0.78, z: 2 },
+  spring: { x: 30, y: 14, scale: 1.02, z: 4 },
+  pendulum: { x: 68, y: 14, scale: 1.02, z: 4 },
+}
+
+const gatePositionForChallenge = (id: ChallengeId): StagePosition => {
+  const position = gateStagePositions[id]
+  return { x: position.x, y: Math.max(6, position.y - 8) }
+}
+
+const observerStagePosition: StagePosition = { x: 86, y: 16 }
+
+const stepDigits = (step: number) => {
+  const [, decimal = ''] = String(step).split('.')
+  return decimal.length
+}
+
+const snapControlValue = (control: ControlDefinition, rawValue: number) => {
+  const clamped = Math.min(control.max, Math.max(control.min, rawValue))
+  const snapped = control.min + Math.round((clamped - control.min) / control.step) * control.step
+  return Number(Math.min(control.max, Math.max(control.min, snapped)).toFixed(stepDigits(control.step)))
+}
+
+const sceneOnlyControls: Record<ChallengeId, ControlKey[]> = {
+  orbit: ['shotScore'],
+  force: [],
+  refcircle: [],
+  spring: ['amplitude'],
+  pendulum: ['angle'],
+}
 
 const caseIntro =
   '你醒在一座停止報時的城市。城中央的鐘塔沒有指針，卻每隔 3.14 秒傳來一次敲擊聲。前哨站的桌上放著一塊完好的蛋糕，奶油沒有融化，蠟燭卻已經燒到只剩五截黑芯。'
@@ -347,6 +393,10 @@ function App() {
   const [finalDeductionAnswer, setFinalDeductionAnswer] = useState<number | null>(saved.finalDeductionAnswer)
   const [loreOpen, setLoreOpen] = useState(false)
   const [hubPanel, setHubPanel] = useState<HubPanel>(null)
+  const [doorPromptId, setDoorPromptId] = useState<ChallengeId | null>(null)
+  const [hubObserverOpen, setHubObserverOpen] = useState(false)
+  const [simObserverOpen, setSimObserverOpen] = useState(false)
+  const [playerPosition, setPlayerPosition] = useState<StagePosition>(() => gatePositionForChallenge(saved.activeId))
   const settingsRef = useRef<GameSettings>({
     challengeId: saved.activeId,
     values: saved.values,
@@ -360,6 +410,8 @@ function App() {
   const activeFragment = storyFragments[activeId]
   const activeCheck = deductionChecks[activeId]
   const activeDialogue = npcDialogues[activeId]
+  const hiddenSceneControls = sceneOnlyControls[activeId]
+  const visibleControls = activeChallenge.controls.filter((control) => !hiddenSceneControls.includes(control.key))
   const result = useMemo(() => evaluateChallenge(activeId, values), [activeId, values])
   const activeComplete = result.completed || finished[activeId]
   const activeDeductionAnswer = deductionAnswers[activeId]
@@ -389,6 +441,51 @@ function App() {
     return { ...achievement, achieved }
   })
   const achievementCount = achievementState.filter((achievement) => achievement.achieved).length
+  const playerScale = clampValue(1.08 - playerPosition.y / 92, 0.72, 1.04)
+  const playerStageStyle = {
+    '--player-x': `${playerPosition.x}%`,
+    '--player-y': `${playerPosition.y}%`,
+    '--player-scale': playerScale,
+  } as React.CSSProperties
+  const playerLayerStyle = { zIndex: Math.round(clampValue(12 - playerPosition.y / 5, 3, 11)) } as React.CSSProperties
+  const observerStageStyle = {
+    '--observer-x': `${observerStagePosition.x}%`,
+    '--observer-y': `${observerStagePosition.y}%`,
+  } as React.CSSProperties
+  const gateStageStyle = (id: ChallengeId) => {
+    const position = gateStagePositions[id]
+    return {
+      '--gate-x': `${position.x}%`,
+      '--gate-y': `${position.y}%`,
+      '--gate-scale': position.scale,
+      zIndex: position.z,
+    } as React.CSSProperties
+  }
+  const promptedChallenge = doorPromptId ? challengeMap[doorPromptId] : null
+  const promptedStatus = doorPromptId ? chapterStatus.find((challenge) => challenge.id === doorPromptId) : null
+  const promptedDialogue = doorPromptId ? npcDialogues[doorPromptId] : null
+  const promptedFragment = doorPromptId ? storyFragments[doorPromptId] : null
+  const finalObserverReady = allFragmentsFound && !finalDeductionSolved
+  const hubObserverLine = finalDeductionSolved
+    ? '你已經提交正確推理。鐘塔沒有把真相公布給所有人，只把第六席的空位留給願意問到底的人。'
+    : finalObserverReady
+      ? '五枚碎片已經互相對上了。不要再問門，也不要問鐘。最後一題，要問我。'
+      : allFragmentsFound
+        ? '五枚碎片已齊。你可以在這裡重新檢視最後推理。'
+        : activeDeductionSolved
+          ? activeDialogue.fragment
+          : activeComplete
+            ? activeDialogue.solved
+            : '主城可以直接點地移動，也可以用鍵盤方向鍵走動。門會開往節點，但矛盾要回來問人。'
+  const simObserverLine = activeDeductionSolved
+    ? activeDialogue.fragment
+    : activeComplete
+      ? activeDialogue.solved
+      : activeId === 'orbit'
+        ? '別把它看成圓周運動。你在調的是一次發射、一口重力井，以及一個不會等你的目標。'
+        : result.sync >= 70
+          ? '同步率已經接近了。現在不要大改，從最敏感的參數慢慢修正。'
+          : activeDialogue.before
 
   useEffect(() => {
     settingsRef.current = {
@@ -408,6 +505,31 @@ function App() {
     )
   }, [activeId, deductionAnswers, finalDeductionAnswer, finished, fragments, unlocked, values])
 
+  useEffect(() => {
+    if (viewMode !== 'hub' || hubPanel || doorPromptId || hubObserverOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const step = event.shiftKey ? 7 : 4
+      const deltas: Record<string, StagePosition> = {
+        ArrowLeft: { x: -step, y: 0 },
+        ArrowRight: { x: step, y: 0 },
+        ArrowUp: { x: 0, y: step },
+        ArrowDown: { x: 0, y: -step },
+      }
+      const delta = deltas[event.key]
+      if (!delta) return
+
+      event.preventDefault()
+      setPlayerPosition((current) => ({
+        x: clampValue(current.x + delta.x, 7, 93),
+        y: clampValue(current.y + delta.y, 6, 44),
+      }))
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [doorPromptId, hubObserverOpen, hubPanel, viewMode])
+
   const completeChallenge = (id: ChallengeId) => {
     setFinished((current) => ({ ...current, [id]: true }))
     const next = nextChallengeId(id)
@@ -421,6 +543,36 @@ function App() {
     const nextResult = evaluateChallenge(activeId, nextValues)
     setValues(nextValues)
     if (nextResult.completed) completeChallenge(activeId)
+  }
+
+  const updateValuesFromScene = (patch: Partial<Record<ControlKey, number>>) => {
+    const id = settingsRef.current.challengeId
+    const challenge = challengeMap[id]
+    const nextValues = { ...settingsRef.current.values }
+    let changed = false
+
+    challenge.controls.forEach((control) => {
+      const rawValue = patch[control.key]
+      if (typeof rawValue !== 'number' || !Number.isFinite(rawValue)) return
+
+      const nextValue = snapControlValue(control, rawValue)
+      if (nextValues[control.key] === nextValue) return
+
+      nextValues[control.key] = nextValue
+      changed = true
+    })
+
+    if (!changed) return
+
+    const nextResult = evaluateChallenge(id, nextValues)
+    settingsRef.current = {
+      ...settingsRef.current,
+      values: nextValues,
+      sync: nextResult.sync,
+      completed: nextResult.completed || settingsRef.current.completed,
+    }
+    setValues(nextValues)
+    if (nextResult.completed) completeChallenge(id)
   }
 
   const resetActive = () => {
@@ -440,6 +592,45 @@ function App() {
     setFinalDeductionAnswer(index)
   }
 
+  const movePlayer = (nextPosition: StagePosition) => {
+    setPlayerPosition({
+      x: clampValue(nextPosition.x, 7, 93),
+      y: clampValue(nextPosition.y, 6, 44),
+    })
+  }
+
+  const movePlayerOnStage = (event: React.PointerEvent<HTMLElement>) => {
+    if ((event.target as HTMLElement).closest('button')) return
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    movePlayer({
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((rect.bottom - event.clientY) / rect.height) * 100,
+    })
+    setDoorPromptId(null)
+  }
+
+  const openObserverDialog = () => {
+    movePlayer(observerStagePosition)
+    setHubObserverOpen(true)
+    setDoorPromptId(null)
+    setHubPanel(null)
+    setLoreOpen(false)
+  }
+
+  const openFinalRoute = () => {
+    if (allFragmentsFound) {
+      openObserverDialog()
+      return
+    }
+    setHubPanel('final')
+  }
+
+  const openSimObserverDialog = () => {
+    setSimObserverOpen(true)
+    setLoreOpen(false)
+  }
+
   const resetProgress = () => {
     const initialUnlocked = createInitialUnlocked()
     setViewMode('intro')
@@ -452,18 +643,48 @@ function App() {
     setFinalDeductionAnswer(null)
     setLoreOpen(false)
     setHubPanel(null)
+    setDoorPromptId(null)
+    setHubObserverOpen(false)
+    setSimObserverOpen(false)
+    setPlayerPosition(gatePositionForChallenge(firstChallenge.id))
   }
 
   const selectChallenge = (id: ChallengeId) => {
     if (!unlocked[id]) return
     setActiveId(id)
     setLoreOpen(false)
+    setDoorPromptId(null)
+    setHubObserverOpen(false)
+    movePlayer(gatePositionForChallenge(id))
+  }
+
+  const openDoorPrompt = (id: ChallengeId) => {
+    movePlayer(gatePositionForChallenge(id))
+    setDoorPromptId(id)
+    setHubPanel(null)
+    setLoreOpen(false)
+    setHubObserverOpen(false)
+    if (unlocked[id]) setActiveId(id)
+  }
+
+  const enterDoorMission = (id: ChallengeId) => {
+    if (!unlocked[id]) return
+    setActiveId(id)
+    setViewMode('sim')
+    setLoreOpen(false)
+    setHubPanel(null)
+    setDoorPromptId(null)
+    setHubObserverOpen(false)
+    setSimObserverOpen(false)
   }
 
   const enterHub = () => {
     setViewMode('hub')
     setLoreOpen(false)
     setHubPanel(null)
+    setDoorPromptId(null)
+    setHubObserverOpen(false)
+    setSimObserverOpen(false)
   }
 
   const enterMission = () => {
@@ -471,6 +692,9 @@ function App() {
     setViewMode('sim')
     setLoreOpen(false)
     setHubPanel(null)
+    setDoorPromptId(null)
+    setHubObserverOpen(false)
+    setSimObserverOpen(false)
   }
 
   const enterNext = () => {
@@ -482,6 +706,10 @@ function App() {
     setViewMode('hub')
     setLoreOpen(false)
     setHubPanel(null)
+    setDoorPromptId(null)
+    setHubObserverOpen(false)
+    setSimObserverOpen(false)
+    if (nextId) movePlayer(gatePositionForChallenge(nextId))
   }
 
   if (viewMode === 'intro') {
@@ -551,28 +779,56 @@ function App() {
           </div>
         </header>
 
-        <section className="idle-quest-card" aria-label="目前任務">
-          <p className="eyebrow">目前節點</p>
-          <h1>{activeChallenge.title}</h1>
-          <span>{activeChallenge.area}</span>
-          <div className={activeDeductionSolved ? 'case-clue revealed' : 'case-clue'}>
-            <small>{activeDeductionSolved ? activeFragment.title : '碎片尚未解封'}</small>
-            <strong>{activeDeductionSolved ? activeFragment.reveal : activeFragment.hint}</strong>
-          </div>
-          <div className="idle-actions">
-            <button className="menu-button primary" type="button" onClick={enterMission}>
-              出發
-            </button>
-            <button className="menu-button quiet" type="button" onClick={() => setHubPanel('quest')}>
-              任務詳情
-            </button>
-          </div>
-        </section>
-
-        <section className="idle-stage" aria-label="主角待機">
+        <section className="idle-stage" aria-label="主城移動區" style={playerStageStyle} onPointerDown={movePlayerOnStage}>
+          <div className="chamber-back-wall" aria-hidden="true" />
+          <div className="chamber-side-wall left" aria-hidden="true" />
+          <div className="chamber-side-wall right" aria-hidden="true" />
+          <div className="chamber-floor-plane" aria-hidden="true" />
+          <div className="chamber-boundary boundary-back" aria-hidden="true" />
+          <div className="chamber-boundary boundary-front" aria-hidden="true" />
           <div className="idle-ring ring-one" />
           <div className="idle-ring ring-two" />
-          <div className="idle-player">
+          <div className="town-floor" aria-hidden="true" />
+          <div className="mission-gates" aria-label="五個任務門">
+            {chapterStatus.map((challenge) => (
+              <button
+                type="button"
+                className={`mission-gate ${challenge.id} ${
+                  challenge.isActive
+                    ? 'active'
+                    : challenge.hasFragment
+                      ? 'done'
+                      : challenge.isUnlocked
+                        ? ''
+                        : 'locked'
+                }`}
+                onClick={() => openDoorPrompt(challenge.id)}
+                key={challenge.id}
+                style={gateStageStyle(challenge.id)}
+              >
+                <span className={`gate-sigil ${challenge.id}`} aria-hidden="true" />
+                <span className="gate-core" aria-hidden="true" />
+                <strong>{challenge.shortTitle}</strong>
+                <small>{challenge.hasFragment ? '碎片取得' : challenge.isDone ? '待推理' : challenge.isUnlocked ? '可進入' : '封鎖中'}</small>
+              </button>
+            ))}
+          </div>
+          <button
+            className={finalObserverReady ? 'observer-npc final-ready' : 'observer-npc'}
+            type="button"
+            onClick={openObserverDialog}
+            style={observerStageStyle}
+          >
+            <span className="observer-aura" aria-hidden="true" />
+            <span className="observer-body" aria-hidden="true">
+              <i />
+              <b />
+            </span>
+            <strong>{observerName}</strong>
+            <small>{finalObserverReady ? '最後推理' : '交談'}</small>
+          </button>
+          {finalObserverReady && <span className="observer-hint" style={observerStageStyle}>五枚碎片已齊，去問觀測員</span>}
+          <div className="idle-player town-player" style={playerLayerStyle}>
             <span className="idle-player-aura" />
             <img className="idle-player-art" src={heroArtUrl} alt="" aria-hidden="true" />
             <span className="idle-player-rim" />
@@ -592,27 +848,131 @@ function App() {
             <span>{fragmentCount}/{challenges.length}</span>
             <strong>碎片</strong>
           </button>
-          <button type="button" onClick={() => setHubPanel('final')}>
+          <button type="button" onClick={openFinalRoute}>
             <span>{finalDeductionSolved ? 'OK' : allFragmentsFound ? '!' : 'LOCK'}</span>
             <strong>終局</strong>
           </button>
         </aside>
 
-        <section className="idle-dialogue" aria-label="角色對話">
-          <span className="portrait">調</span>
-          <p>
-            <strong>{activeChallenge.npc}：</strong>
-            {finalDeductionSolved
-              ? '第六席已確認。鐘塔終於承認，重啟的人不是失蹤者，而是醒來的人。'
-              : allFragmentsFound
-                ? '五枚碎片已經咬合。鐘塔不會直接替你說出真相；它要你提交最後一次推理。'
-                : activeDeductionSolved
-                  ? activeDialogue.fragment
-                  : activeComplete
-                    ? activeDialogue.solved
-                    : activeDialogue.before}
-          </p>
-        </section>
+        {hubObserverOpen && (
+          <section className={finalObserverReady ? 'observer-dialog-layer final-ready' : 'observer-dialog-layer'} aria-label="觀測員對話">
+            <button
+              className="observer-dialog-backdrop"
+              type="button"
+              onClick={() => setHubObserverOpen(false)}
+              aria-label="關閉觀測員對話"
+            />
+            <article className="observer-dialog-card">
+              <div className="observer-dialog-portrait">
+                <span className="observer-avatar" aria-hidden="true">
+                  <i />
+                  <b />
+                </span>
+              </div>
+              <div className="observer-dialog-copy">
+                <p className="eyebrow">{finalObserverReady ? '終局詢問' : '觀測員通訊'}</p>
+                <h2>{observerName}</h2>
+                <span>{finalObserverReady ? '她正等你把五份供詞交出來。' : '鐘塔前哨的記錄者。'}</span>
+                <p>{hubObserverLine}</p>
+
+                {allFragmentsFound ? (
+                  <div className="observer-final-case">
+                    <p className="eyebrow">{finalDeductionSolved ? '最終故事解鎖' : '最終推理'}</p>
+                    <strong>{finalDeductionSolved ? '第六席的答案' : finalDeductionCheck.prompt}</strong>
+                    {!finalDeductionSolved && (
+                      <>
+                        <div className="deduction-options final-options">
+                          {finalDeductionCheck.options.map((option, index) => (
+                            <button
+                              className={
+                                finalDeductionAnswer === index
+                                  ? index === finalDeductionCheck.answerIndex
+                                    ? 'correct'
+                                    : 'wrong'
+                                  : ''
+                              }
+                              type="button"
+                              onClick={() => chooseFinalDeduction(index)}
+                              key={option}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        {finalDeductionAnswer !== null && (
+                          <small>
+                            {finalDeductionAnswer === finalDeductionCheck.answerIndex
+                              ? finalDeductionCheck.success
+                              : finalDeductionCheck.fail}
+                          </small>
+                        )}
+                      </>
+                    )}
+                    {finalDeductionSolved && finalRevealLines.map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="observer-final-case locked-final">
+                    <p className="eyebrow">終局尚未開放</p>
+                    <strong>還缺少 {challenges.length - fragmentCount} 枚週期碎片</strong>
+                    <span>碎片齊全後，觀測員會在主城裡發出提示。</span>
+                  </div>
+                )}
+              </div>
+            </article>
+          </section>
+        )}
+
+        {doorPromptId && promptedChallenge && promptedStatus && promptedDialogue && promptedFragment && (
+          <section className={`door-dialog-layer sim-theme-${doorPromptId}`} aria-label="任務門對話">
+            <button className="door-dialog-backdrop" type="button" onClick={() => setDoorPromptId(null)} aria-label="關閉任務門對話" />
+            <article className={promptedStatus.isUnlocked ? 'door-dialog-card' : 'door-dialog-card locked'}>
+              <div className="door-dialog-portrait">
+                <img src={heroArtUrl} alt="" aria-hidden="true" />
+              </div>
+              <div className="door-dialog-copy">
+                <p className="eyebrow">{promptedStatus.isUnlocked ? '節點接入' : '節點未供能'}</p>
+                <h2>{promptedChallenge.shortTitle}</h2>
+                <span>{promptedChallenge.area}</span>
+                <p>
+                  <strong>{promptedChallenge.npc}：</strong>
+                  {promptedStatus.isUnlocked
+                    ? promptedStatus.hasFragment
+                      ? promptedDialogue.fragment
+                      : promptedStatus.isDone
+                        ? promptedDialogue.solved
+                        : promptedDialogue.before
+                    : '這扇門還沒有供能。先完成前一個週期節點，門上的紋路才會亮起。'}
+                </p>
+                <div className="door-dialog-clue">
+                  <small>{promptedStatus.hasFragment ? promptedFragment.title : '門縫提示'}</small>
+                  <strong>{promptedStatus.hasFragment ? promptedFragment.reveal : promptedFragment.hint}</strong>
+                </div>
+                <div className="door-dialog-actions">
+                  <button
+                    className="menu-button primary"
+                    type="button"
+                    onClick={() => enterDoorMission(promptedChallenge.id)}
+                    disabled={!promptedStatus.isUnlocked}
+                  >
+                    {promptedStatus.isUnlocked ? '進入任務' : '尚未解鎖'}
+                  </button>
+                  <button
+                    className="menu-button quiet"
+                    type="button"
+                    onClick={() => {
+                      setDoorPromptId(null)
+                      setHubPanel('quest')
+                    }}
+                  >
+                    查看任務紀錄
+                  </button>
+                </div>
+              </div>
+            </article>
+          </section>
+        )}
 
         <nav className="hub-dock" aria-label="主城系統">
           <button className={hubPanel === 'quest' ? 'active' : ''} type="button" onClick={() => setHubPanel('quest')}>
@@ -776,8 +1136,8 @@ function App() {
                     })}
                   </div>
                   {allFragmentsFound && (
-                    <button className="menu-button primary panel-wide-action" type="button" onClick={() => setHubPanel('final')}>
-                      前往最終推理
+                    <button className="menu-button primary panel-wide-action" type="button" onClick={openFinalRoute}>
+                      去問觀測員
                     </button>
                   )}
                 </div>
@@ -871,7 +1231,7 @@ function App() {
 
   return (
     <main className={`game-shell sim-shell sim-theme-${activeId}${activeComplete ? ' sim-complete' : ''}`}>
-      <PhaserStage settingsRef={settingsRef} />
+      <PhaserStage settingsRef={settingsRef} onValuePatch={updateValuesFromScene} />
 
       <button className="chapter-chip back-chip" type="button" onClick={enterHub}>
         <span>返回主城</span>
@@ -923,7 +1283,20 @@ function App() {
           </div>
         </div>
 
-        {activeChallenge.controls.map((control) => (
+        {hiddenSceneControls.length > 0 && (
+          <div className="scene-control-note">
+            <strong>{activeId === 'orbit' ? '彈弓發射' : '場景操作'}</strong>
+            <span>
+              {activeId === 'orbit'
+                ? '按住左側發射器往後拉，放開後讓探針被中央重力井偏折並擊中右側封印靶。'
+                : activeId === 'spring'
+                  ? '振幅滑桿已移除：按住彈簧方塊可拖動，按住期間時間暫停，放開後才開始模擬。'
+                  : '角度滑桿已移除：按住擺錘可拖動，按住期間時間暫停，放開後才開始模擬。'}
+            </span>
+          </div>
+        )}
+
+        {visibleControls.map((control) => (
           <label className="slider-row" key={`${activeId}-${control.key}`}>
             <span>{control.label}</span>
             <output>
@@ -953,7 +1326,13 @@ function App() {
 
         <div className={activeComplete ? 'feedback complete' : 'feedback'}>
           <p>{activeComplete ? activeChallenge.successLine : result.feedback}</p>
-          {!activeComplete && <small>{activeChallenge.solveHint}</small>}
+          {!activeComplete && (
+            <small>
+              {activeId === 'orbit'
+                ? '提示：像憤怒鳥一樣往反方向拉開發射器；短軌跡只顯示前段，真正路徑會被中央重力井彎折。'
+                : activeChallenge.solveHint}
+            </small>
+          )}
           {activeComplete && nextId && <small>門已開啟：但碎片只會回應正確的推理。</small>}
           {activeComplete && !nextId && <small>最後的門已開啟，剩下的是那張沒有名字的生日卡。</small>}
         </div>
@@ -1044,26 +1423,56 @@ function App() {
           {allFragmentsFound
             ? finalDeductionSolved
               ? ' 終局推理已完成，返回主城讀取最終故事。'
-              : ' 五枚碎片已湊齊，返回主城進行最終推理。'
+              : ' 五枚碎片已湊齊，返回主城點選觀測員。'
             : ` 已取得 ${fragmentCount}/${challenges.length} 枚碎片。`}
         </span>
       </section>
 
-      <section className="dialogue-panel" aria-label="角色對話">
-        <span className="portrait">調</span>
-        <p>
-          <strong>{activeChallenge.npc}：</strong>
-          {activeDeductionSolved
-            ? activeDialogue.fragment
-            : activeComplete
-              ? activeDialogue.solved
-            : result.sync >= 70
-              ? '畫面開始像同一段記憶反覆對齊，只差最後一個鎖點。'
-              : activeDialogue.before}
-        </p>
-      </section>
+      <button className={activeComplete ? 'sim-observer-call complete' : 'sim-observer-call'} type="button" onClick={openSimObserverDialog}>
+        <span className="observer-miniature" aria-hidden="true">
+          <i />
+          <b />
+        </span>
+        <strong>{observerName}</strong>
+        <small>{activeComplete ? '檢視判讀' : '詢問提示'}</small>
+      </button>
+
+      {simObserverOpen && (
+        <section className={`observer-dialog-layer sim-theme-${activeId}`} aria-label="模擬觀測員對話">
+          <button
+            className="observer-dialog-backdrop"
+            type="button"
+            onClick={() => setSimObserverOpen(false)}
+            aria-label="關閉觀測員對話"
+          />
+          <article className="observer-dialog-card sim-dialog">
+            <div className="observer-dialog-portrait">
+              <span className="observer-avatar" aria-hidden="true">
+                <i />
+                <b />
+              </span>
+            </div>
+            <div className="observer-dialog-copy">
+              <p className="eyebrow">節點觀測</p>
+              <h2>{observerName}</h2>
+              <span>{activeChallenge.area}</span>
+              <p>{simObserverLine}</p>
+              <div className="observer-final-case">
+                <p className="eyebrow">目前讀數</p>
+                <strong>{activeComplete ? activeChallenge.successLine : result.feedback}</strong>
+                <span>
+                  {activeId === 'orbit'
+                    ? '用滑鼠或觸控按住發射器向後拉，放開後讓探針穿過重力井。'
+                    : activeChallenge.solveHint}
+                </span>
+              </div>
+            </div>
+          </article>
+        </section>
+      )}
     </main>
   )
 }
 
 export default App
+

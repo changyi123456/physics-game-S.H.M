@@ -1,6 +1,7 @@
 export type ChallengeId = 'orbit' | 'force' | 'refcircle' | 'spring' | 'pendulum'
 
 export type ControlKey =
+  | 'shotScore'
   | 'radius'
   | 'omega'
   | 'mass'
@@ -68,27 +69,22 @@ export type GameSettingsRef = {
   current: GameSettings
 }
 
-const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
-const scoreWithin = (error: number, range: number) => clamp01(1 - error / range)
 const fmt = (value: number, digits = 2) => value.toFixed(digits)
 
 export const challenges: ChallengeDefinition[] = [
   {
     id: 'orbit',
     order: 1,
-    area: '圓周廣場',
-    title: '校準失控的星象儀',
-    shortTitle: '星象儀',
-    npc: '軌道守衛',
-    sceneTone: '星盤、餐桌倒影與第六席訊號',
-    story: '星象儀每轉回同一角度，前哨桌上的蛋糕就會短暫出現在反光裡。兩道鎖必須同時吻合，第一枚碎片才肯現身。',
-    successLine: '星盤停止尖叫，反光裡的第六張椅子多亮了一秒。',
-    lore: '重複不是牢籠，而是某人故意留下的路標。',
-    solveHint: '提示解：R = 130px，ω = 2.00 rad/s。',
-    controls: [
-      { key: 'radius', label: '軌道半徑 R', unit: 'px', min: 90, max: 210, step: 1, defaultValue: 170 },
-      { key: 'omega', label: '角速度 ω', unit: 'rad/s', min: 0.8, max: 4.4, step: 0.01, defaultValue: 3.4 },
-    ],
+    area: '重力彈弓禁區',
+    title: '裂隙彈射場',
+    shortTitle: '重力彈射',
+    npc: '觀測員 01',
+    sceneTone: '左側固定發射器、中央重力井、右側封印靶，像科幻版憤怒鳥關卡。',
+    story: '裂隙靶標躲在重力井後方，直線射擊永遠碰不到它。你只能拉開左側發射器，讓探針擦過中央重力井，被偏折後撞進右側封印靶。',
+    successLine: '探針擊中封印靶，重力井短暫打開了下一條暗道。',
+    lore: '這一關不是調公式，而是用手感讀出重力偏折的路徑。',
+    solveHint: '按住左側發射器往反方向拉開，放開後讓探針擦過中央重力井並命中右側目標。',
+    controls: [{ key: 'shotScore', label: '命中狀態', unit: '', min: 0, max: 1, step: 1, defaultValue: 0 }],
   },
   {
     id: 'force',
@@ -239,33 +235,24 @@ function finalize(metrics: Metric[], objectives: Objective[], feedback: string):
 }
 
 function evaluateOrbit(values: Record<ControlKey, number>) {
-  const radius = values.radius
-  const omega = values.omega
-  const period = (2 * Math.PI) / omega
-  const speed = radius * omega
-  const acceleration = radius * omega * omega
-  const periodReady = Math.abs(period - 3.14) <= 0.08
-  const speedReady = Math.abs(speed - 260) <= 18
-  const sync = Math.round(
-    (scoreWithin(Math.abs(period - 3.14), 1.2) * 0.56 +
-      scoreWithin(Math.abs(speed - 260), 130) * 0.44) *
-      100,
-  )
+  const targetHit = values.shotScore >= 1
+
   return {
     metrics: [
-      { key: 'T', label: 'T', value: `${fmt(period)} s`, ready: periodReady },
-      { key: 'v', label: 'v', value: `${speed.toFixed(0)} px/s`, ready: speedReady },
-      { key: 'a', label: 'a', value: `${acceleration.toFixed(0)} px/s²` },
+      { key: 'shot', label: '彈射', value: targetHit ? 'HIT' : 'READY', ready: targetHit },
+      { key: 'gravity', label: '重力井', value: targetHit ? '偏折成功' : '等待擦掠', ready: targetHit },
+      { key: 'target', label: '封印靶', value: targetHit ? '命中' : '未命中', ready: targetHit },
     ],
     objectives: [
-      { label: '週期 T 接近 3.14 s', ready: periodReady },
-      { label: '速率 v 接近 260 px/s', ready: speedReady },
+      { label: '拉開左側發射器並釋放探針', ready: targetHit },
+      { label: '利用中央重力井偏折路徑', ready: targetHit },
+      { label: '擊中右側封印靶', ready: targetHit },
     ],
-    sync,
-    completed: periodReady && speedReady,
-    feedback: periodReady && speedReady
-      ? '星盤同步完成，第一段桌邊影像開始回放。'
-      : '星盤仍然失衡，桌面倒影只閃了一下。',
+    sync: targetHit ? 100 : 0,
+    completed: targetHit,
+    feedback: targetHit
+      ? '命中確認。重力井把探針折進了正確暗道。'
+      : '拉住左側發射器往後拖，放開後讓探針擦過中央重力井並撞上右側封印靶。',
   }
 }
 
@@ -353,3 +340,4 @@ function evaluatePendulum(values: Record<ControlKey, number>) {
       : '鐘擺還沒準時，生日卡上的字仍被晃成一片。',
   )
 }
+
