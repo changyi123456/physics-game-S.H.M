@@ -1,16 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
 :root {
   --text: #d7e2ee;
   --text-strong: #f8fafc;
   --muted: #9fb2c6;
   --panel: rgba(7, 14, 28, 0.72);
   --panel-border: rgba(148, 163, 184, 0.22);
+
+  /* 基礎機能色（沿用） */
   --teal: #5eead4;
   --amber: #fbbf24;
   --rose: #fb7185;
   --green: #22c55e;
   --ink: #070b18;
+
+  /* 動漫「咒力 / 呼吸」能量色盤 —— JJK 緋紅藍 × 鬼滅水焰金 */
+  --energy-cyan: #38f2e6;     /* 反轉術式・水之呼吸 */
+  --energy-crimson: #ff3b6b;  /* 咒力緋紅・炎之呼吸 */
+  --energy-gold: #ffcf4a;     /* 日輪・金光 */
+  --energy-violet: #b07bff;   /* 領域展開・紫 */
+  --energy-azure: #4aa8ff;    /* 冷色補光 */
+
+  /* 主能量漸層（標題、按鈕、發光描邊共用） */
+  --grad-energy: linear-gradient(115deg, var(--energy-cyan), var(--energy-violet) 45%, var(--energy-crimson));
+  --grad-flame: linear-gradient(125deg, var(--energy-gold), var(--energy-crimson));
+  --grad-water: linear-gradient(125deg, var(--energy-azure), var(--energy-cyan));
+
   --shadow: 0 18px 55px rgba(0, 0, 0, 0.34);
-  font-family: Inter, "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --glow-cyan: 0 0 22px rgba(56, 242, 230, 0.45);
+  --glow-crimson: 0 0 22px rgba(255, 59, 107, 0.45);
+
+  /* 字體層級：內文無襯線、標題毛筆襯線、數字裝飾體 */
+  --font-body: "Noto Sans TC", Inter, "Microsoft JhengHei", system-ui, sans-serif;
+  --font-display: "Noto Serif TC", "Noto Sans TC", "Microsoft JhengHei", serif;
+  --font-numeral: "Cinzel", "Noto Serif TC", serif;
+
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--ink);
   font-synthesis: none;

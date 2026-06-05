@@ -15,6 +15,7 @@ import {
   type GameSettings,
 } from './game/astrolabeModel'
 import { PhaserStage } from './game/PhaserStage'
+import { juice, burstParticles, burstFromElement } from './game/juice'
 
 type SavedGame = {
   activeId: ChallengeId
@@ -72,6 +73,8 @@ type GateStagePosition = StagePosition & {
 const saveKey = 'periodic-motion-rpg-v5'
 const firstChallenge = challenges[0]
 const heroArtUrl = `${import.meta.env.BASE_URL}hero-rpg.svg`
+const cityArtUrl = `${import.meta.env.BASE_URL}city-skyline.svg`
+const observerArtUrl = `${import.meta.env.BASE_URL}observer.svg`
 const observerName = '觀測員艾菈'
 
 const clampValue = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
@@ -356,21 +359,10 @@ function ClockworkScene({ mode }: { mode: SceneMode }) {
       <span className="moon-disc"><i /></span>
       <span className="gear-ring gear-a" />
       <span className="gear-ring gear-b" />
-      <span className="city-ridge ridge-back">
-        <i className="spire s1" />
-        <i className="spire s2" />
-        <i className="spire s3" />
-        <i className="spire s4" />
-      </span>
-      <span className="city-ridge ridge-front">
-        <i className="spire s5" />
-        <i className="spire s6" />
-        <i className="spire s7" />
-      </span>
-      <span className="sky-bridge" />
+      <img className="skyline-art" src={cityArtUrl} alt="" aria-hidden="true" />
       <span className="portal-arch" />
-      <span className="rpg-character hero"><i /><b /></span>
-      <span className="rpg-character mentor"><i /><b /></span>
+      <img className="scene-figure hero" src={heroArtUrl} alt="" aria-hidden="true" />
+      <img className="scene-figure mentor" src={observerArtUrl} alt="" aria-hidden="true" />
       <span className="node-light node-a" />
       <span className="node-light node-b" />
       <span className="node-light node-c" />
@@ -397,6 +389,11 @@ function App() {
   const [hubObserverOpen, setHubObserverOpen] = useState(false)
   const [simObserverOpen, setSimObserverOpen] = useState(false)
   const [playerPosition, setPlayerPosition] = useState<StagePosition>(() => gatePositionForChallenge(saved.activeId))
+  const [muted, setMuted] = useState(() => juice.isMuted())
+  const prevCompleteRef = useRef(false)
+  const prevFragmentCountRef = useRef(Object.values(saved.fragments).filter(Boolean).length)
+  const prevFinalSolvedRef = useRef(saved.finalDeductionAnswer === finalDeductionCheck.answerIndex)
+  const lastTickRef = useRef(0)
   const settingsRef = useRef<GameSettings>({
     challengeId: saved.activeId,
     values: saved.values,
@@ -505,6 +502,57 @@ function App() {
     )
   }, [activeId, deductionAnswers, finalDeductionAnswer, finished, fragments, unlocked, values])
 
+  // 啟動環境 BGM（WebAudio 需在使用者首次互動後才會真正出聲）
+  useEffect(() => {
+    juice.startBgm()
+    return () => juice.stopBgm()
+  }, [])
+
+  // 過關：上行琶音 + 畫面中央能量爆發
+  useEffect(() => {
+    if (activeComplete && !prevCompleteRef.current) {
+      juice.playSfx('success')
+      burstParticles(window.innerWidth / 2, window.innerHeight / 2, { count: 30, power: 220 })
+    }
+    prevCompleteRef.current = activeComplete
+  }, [activeComplete])
+
+  // 解開碎片：閃光和弦 + 緋紅粒子
+  useEffect(() => {
+    if (fragmentCount > prevFragmentCountRef.current) {
+      juice.playSfx('fragment')
+      burstParticles(window.innerWidth / 2, window.innerHeight * 0.4, {
+        count: 26,
+        colors: ['#ffcf4a', '#ff3b6b', '#38f2e6'],
+        power: 200,
+      })
+    }
+    prevFragmentCountRef.current = fragmentCount
+  }, [fragmentCount])
+
+  // 終局揭曉：莊嚴和弦 + 全幅能量爆發
+  useEffect(() => {
+    if (finalDeductionSolved && !prevFinalSolvedRef.current) {
+      juice.playSfx('final')
+      burstParticles(window.innerWidth / 2, window.innerHeight / 2, { count: 48, power: 300, spread: 360 })
+    }
+    prevFinalSolvedRef.current = finalDeductionSolved
+  }, [finalDeductionSolved])
+
+  const toggleMute = () => {
+    juice.playSfx('click')
+    setMuted(juice.toggleMute())
+  }
+
+  // 包裝按鈕回饋：播放音效 + 從按鈕噴出粒子
+  const withClickFx = (handler?: () => void, sfx: 'click' | 'unlock' | 'back' = 'click') => (
+    event: React.MouseEvent,
+  ) => {
+    juice.playSfx(sfx)
+    if (sfx === 'unlock') burstFromElement(event.currentTarget, { count: 14, power: 90 })
+    handler?.()
+  }
+
   useEffect(() => {
     if (viewMode !== 'hub' || hubPanel || doorPromptId || hubObserverOpen) return
 
@@ -542,6 +590,12 @@ function App() {
     const nextValues = { ...values, [key]: nextValue }
     const nextResult = evaluateChallenge(activeId, nextValues)
     setValues(nextValues)
+    // 各關專屬的滑桿微調音（節流避免拖動時連發）
+    const now = performance.now()
+    if (now - lastTickRef.current > 55) {
+      juice.playSliderTick(activeId)
+      lastTickRef.current = now
+    }
     if (nextResult.completed) completeChallenge(activeId)
   }
 
@@ -585,11 +639,16 @@ function App() {
     if (index === activeCheck.answerIndex) {
       setFragments((current) => ({ ...current, [activeId]: true }))
       setLoreOpen(true)
+      // 正確：'fragment' 音效由碎片數 effect 觸發
+    } else {
+      juice.playSfx('error')
     }
   }
 
   const chooseFinalDeduction = (index: number) => {
     setFinalDeductionAnswer(index)
+    if (index !== finalDeductionCheck.answerIndex) juice.playSfx('error')
+    // 正確：'final' 音效由 finalDeductionSolved effect 觸發
   }
 
   const movePlayer = (nextPosition: StagePosition) => {
@@ -714,8 +773,17 @@ function App() {
 
   if (viewMode === 'intro') {
     return (
-      <main className="game-shell menu-shell">
+      <main className="game-shell menu-shell view-enter">
         <ClockworkScene mode="intro" />
+        <button
+          className="audio-toggle"
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? '開啟音效' : '靜音'}
+          title={muted ? '開啟音效' : '靜音'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
 
         <section className="intro-stage" aria-label="遊戲序章">
           <div className="intro-copy">
@@ -737,11 +805,11 @@ function App() {
             </div>
 
             <div className="intro-actions">
-              <button className="menu-button primary" type="button" onClick={enterHub}>
+              <button className="menu-button primary" type="button" onClick={withClickFx(enterHub, 'unlock')}>
                 {hasProgress ? '繼續冒險' : '開始冒險'}
               </button>
               {hasProgress && (
-                <button className="menu-button quiet" type="button" onClick={resetProgress}>
+                <button className="menu-button quiet" type="button" onClick={withClickFx(resetProgress, 'back')}>
                   重開存檔
                 </button>
               )}
@@ -760,8 +828,17 @@ function App() {
 
   if (viewMode === 'hub') {
     return (
-      <main className="game-shell menu-shell hub-shell idle-hub-shell">
+      <main className="game-shell menu-shell hub-shell idle-hub-shell view-enter">
         <ClockworkScene mode="hub" />
+        <button
+          className="audio-toggle"
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? '開啟音效' : '靜音'}
+          title={muted ? '開啟音效' : '靜音'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
 
         <header className="idle-topbar">
           <div>
@@ -820,10 +897,7 @@ function App() {
             style={observerStageStyle}
           >
             <span className="observer-aura" aria-hidden="true" />
-            <span className="observer-body" aria-hidden="true">
-              <i />
-              <b />
-            </span>
+            <img className="observer-body" src={observerArtUrl} alt="" aria-hidden="true" />
             <strong>{observerName}</strong>
             <small>{finalObserverReady ? '最後推理' : '交談'}</small>
           </button>
@@ -864,10 +938,7 @@ function App() {
             />
             <article className="observer-dialog-card">
               <div className="observer-dialog-portrait">
-                <span className="observer-avatar" aria-hidden="true">
-                  <i />
-                  <b />
-                </span>
+                <img className="observer-avatar" src={observerArtUrl} alt="" aria-hidden="true" />
               </div>
               <div className="observer-dialog-copy">
                 <p className="eyebrow">{finalObserverReady ? '終局詢問' : '觀測員通訊'}</p>
@@ -953,7 +1024,7 @@ function App() {
                   <button
                     className="menu-button primary"
                     type="button"
-                    onClick={() => enterDoorMission(promptedChallenge.id)}
+                    onClick={withClickFx(() => enterDoorMission(promptedChallenge.id), 'unlock')}
                     disabled={!promptedStatus.isUnlocked}
                   >
                     {promptedStatus.isUnlocked ? '進入任務' : '尚未解鎖'}
@@ -1230,12 +1301,21 @@ function App() {
   }
 
   return (
-    <main className={`game-shell sim-shell sim-theme-${activeId}${activeComplete ? ' sim-complete' : ''}`}>
+    <main className={`game-shell sim-shell view-enter sim-theme-${activeId}${activeComplete ? ' sim-complete' : ''}`}>
       <PhaserStage settingsRef={settingsRef} onValuePatch={updateValuesFromScene} />
 
-      <button className="chapter-chip back-chip" type="button" onClick={enterHub}>
+      <button className="chapter-chip back-chip" type="button" onClick={withClickFx(enterHub, 'back')}>
         <span>返回主城</span>
         <strong>{activeChallenge.area}</strong>
+      </button>
+      <button
+        className="audio-toggle sim-audio"
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? '開啟音效' : '靜音'}
+        title={muted ? '開啟音效' : '靜音'}
+      >
+        {muted ? '🔇' : '🔊'}
       </button>
 
       <section className="quest-panel" aria-label="任務">
@@ -1379,7 +1459,7 @@ function App() {
           <button
             className="story-button next"
             type="button"
-            onClick={enterNext}
+            onClick={withClickFx(enterNext, 'unlock')}
             disabled={!activeComplete}
           >
             {nextId ? '回主城接下一關' : '回主城結算'}

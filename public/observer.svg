@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360" role="img" aria-label="觀測員艾菈">
+  <defs>
+    <linearGradient id="ob-cloak" x1="60" y1="120" x2="180" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2b1a4d"/>
+      <stop offset="0.5" stop-color="#3a2168"/>
+      <stop offset="1" stop-color="#150a2a"/>
+    </linearGradient>
+    <linearGradient id="ob-cloakLight" x1="80" y1="150" x2="150" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7b5cff"/>
+      <stop offset="1" stop-color="#3a2168" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ob-hair" x1="80" y1="40" x2="160" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9be7ff"/>
+      <stop offset="0.5" stop-color="#4aa8ff"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="ob-skin" x1="100" y1="70" x2="140" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff1e6"/>
+      <stop offset="1" stop-color="#e8b58f"/>
+    </linearGradient>
+    <radialGradient id="ob-aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.35" stop-color="#38f2e6" stop-opacity="0"/>
+      <stop offset="0.75" stop-color="#38f2e6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#b07bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ob-orb" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#fff7e0"/>
+      <stop offset="0.4" stop-color="#ffcf4a"/>
+      <stop offset="1" stop-color="#ff3b6b"/>
+    </radialGradient>
+    <filter id="ob-bloom" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- 能量光環 -->
+  <ellipse cx="120" cy="190" rx="118" ry="160" fill="url(#ob-aura)"/>
+
+  <!-- 地面影 -->
+  <ellipse cx="120" cy="344" rx="74" ry="13" fill="#050314" opacity="0.5"/>
+  <ellipse cx="120" cy="342" rx="50" ry="7" fill="#7b5cff" opacity="0.3"/>
+
+  <!-- 斗篷主體 -->
+  <path fill="url(#ob-cloak)" stroke="#0c0620" stroke-width="4" stroke-linejoin="round"
+    d="M120 120c34 0 58 22 66 60 9 44 12 104 8 158-26 10-49 14-74 14s-48-4-74-14c-4-54-1-114 8-158 8-38 32-60 66-60Z"/>
+  <path fill="url(#ob-cloakLight)" opacity="0.55"
+    d="M120 126c-22 4-37 24-43 58-7 40-9 96-6 146 14 6 30 9 49 10-9-66-9-148 0-214Z"/>
+  <!-- 斗篷內裡能量紋 -->
+  <path fill="none" stroke="#38f2e6" stroke-width="2.5" opacity="0.6"
+    d="M96 196c0 50 4 96 12 138M144 196c0 50-4 96-12 138"/>
+  <path fill="none" stroke="#ffcf4a" stroke-width="2" opacity="0.5"
+    d="M120 150v176"/>
+
+  <!-- 兜帽肩 -->
+  <path fill="#241245" stroke="#0c0620" stroke-width="4" stroke-linejoin="round"
+    d="M120 120c-28 0-50 16-58 40 18-14 40-20 58-20s40 6 58 20c-8-24-30-40-58-40Z"/>
+
+  <!-- 頭髮（後） -->
+  <path fill="url(#ob-hair)" d="M82 96c-8-40 18-70 38-70s46 30 38 70c-6 30-2 54 4 78-14 8-30 12-42 12s-28-4-42-12c6-24 10-48 4-78Z" opacity="0.95"/>
+  <!-- 臉 -->
+  <path fill="url(#ob-skin)" stroke="#c98a63" stroke-width="1.5"
+    d="M98 88c4-20 16-30 22-30s18 10 22 30c3 16-2 34-22 36-20-2-25-20-22-36Z"/>
+  <!-- 瀏海 -->
+  <path fill="url(#ob-hair)" d="M96 84c4-30 22-46 24-46s20 16 24 46c-12-8-22-10-24-10s-12 2-24 10Z"/>
+  <!-- 觀測員護目鏡（單眼能量鏡） -->
+  <g>
+    <rect x="100" y="92" width="40" height="13" rx="6" fill="#0b1626" stroke="#38f2e6" stroke-width="2"/>
+    <circle cx="128" cy="98.5" r="4.5" fill="#38f2e6" filter="url(#ob-bloom)"/>
+    <circle cx="128" cy="98.5" r="2.5" fill="#eafffd"/>
+    <circle cx="110" cy="98.5" r="2" fill="#4aa8ff" opacity="0.7"/>
+  </g>
+  <!-- 微笑 -->
+  <path d="M114 116c4 3 8 3 12 0" fill="none" stroke="#a85a4a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 懸浮星盤（手中能量球） -->
+  <g>
+    <circle cx="120" cy="232" r="34" fill="url(#ob-orb)" opacity="0.28" filter="url(#ob-bloom)"/>
+    <circle cx="120" cy="232" r="17" fill="url(#ob-orb)"/>
+    <ellipse cx="120" cy="232" rx="32" ry="11" fill="none" stroke="#38f2e6" stroke-width="2.5"/>
+    <ellipse cx="120" cy="232" rx="11" ry="32" fill="none" stroke="#ffcf4a" stroke-width="2" opacity="0.7"/>
+    <circle cx="120" cy="232" r="5" fill="#fff7e0"/>
+  </g>
+
+  <!-- 浮動光點 -->
+  <g>
+    <circle cx="60" cy="170" r="3" fill="#38f2e6"/>
+    <circle cx="182" cy="200" r="3.5" fill="#ffcf4a"/>
+    <circle cx="176" cy="120" r="2.5" fill="#b07bff"/>
+    <circle cx="54" cy="240" r="2.5" fill="#ff3b6b"/>
+  </g>
+</svg>

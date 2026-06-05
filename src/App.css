@@ -4404,3 +4404,360 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+ * 動漫風改造層（JJK・鬼滅能量美學）— append-only override
+ * 透過 CSS cascade 覆蓋前面同特異度的規則。
+ * ════════════════════════════════════════════════════════════════ */
+
+/* ── 標題字體層級：毛筆襯線 + 數字裝飾體 ───────────────────── */
+.intro-copy h1,
+.hub-briefing h1,
+.quest-panel h1,
+.control-panel h2,
+.final-reveal strong,
+.observer-dialog-copy h2,
+.door-dialog-copy h2 {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+.title-badge,
+.eyebrow,
+.sync-dial span,
+.mission-medal,
+.map-node span,
+.chapter-node span {
+  font-family: var(--font-numeral);
+  letter-spacing: 0.06em;
+}
+
+/* 主標題：能量漸層描字 + 緋紅外光，像咒術海報 */
+.intro-copy h1 {
+  background: var(--grad-energy);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(3, 6, 18, 0.9)) drop-shadow(0 0 26px rgba(255, 59, 107, 0.35));
+}
+
+/* ── 能量主題：把面板頂條與重點光換成能量漸層 ─────────────── */
+.quest-panel::before,
+.control-panel::before,
+.dialogue-panel::before {
+  height: 4px;
+  background: var(--grad-energy);
+  opacity: 0.95;
+  box-shadow: 0 0 16px rgba(56, 242, 230, 0.5);
+}
+
+.eyebrow {
+  color: var(--energy-cyan);
+  text-shadow: 0 0 14px rgba(56, 242, 230, 0.35);
+}
+
+.scene-tone {
+  color: var(--energy-gold);
+}
+
+/* ── 動漫式按鈕：斜切角 + 流動能量描邊 ─────────────────────── */
+.menu-button.primary,
+.story-button {
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  border: 0;
+  color: #04121a;
+  background: var(--grad-water);
+  background-size: 200% 200%;
+  box-shadow:
+    0 0 0 1px rgba(56, 242, 230, 0.5),
+    0 10px 28px rgba(56, 242, 230, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  transition: transform 140ms ease, box-shadow 200ms ease, background-position 400ms ease;
+}
+
+.menu-button.primary:hover,
+.story-button:hover {
+  transform: translateY(-2px) scale(1.015);
+  background-position: 100% 50%;
+  box-shadow:
+    0 0 0 1px rgba(56, 242, 230, 0.85),
+    0 14px 34px rgba(56, 242, 230, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.menu-button.primary:active,
+.story-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.story-button.next {
+  background: var(--grad-flame);
+  color: #1a0a04;
+  box-shadow:
+    0 0 0 1px rgba(255, 207, 74, 0.55),
+    0 10px 28px rgba(255, 59, 107, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.story-button.next:hover {
+  box-shadow:
+    0 0 0 1px rgba(255, 207, 74, 0.9),
+    0 14px 34px rgba(255, 59, 107, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ── 同步率轉盤：能量配色 + 外光 ───────────────────────────── */
+.sync-dial {
+  background:
+    radial-gradient(circle at center, rgba(5, 8, 18, 0.96) 54%, transparent 56%),
+    conic-gradient(var(--energy-cyan) var(--sync), rgba(148, 163, 184, 0.16) 0);
+  box-shadow: 0 0 22px rgba(56, 242, 230, 0.3);
+}
+
+.sync-dial.complete {
+  background:
+    radial-gradient(circle at center, rgba(5, 8, 18, 0.96) 54%, transparent 56%),
+    conic-gradient(var(--energy-gold) var(--sync), rgba(148, 163, 184, 0.16) 0);
+  box-shadow: 0 0 30px rgba(255, 207, 74, 0.45);
+}
+
+/* ── 過關：戲劇化能量爆閃（取代溫和的 completePulse）─────────── */
+.sim-complete .quest-panel,
+.sim-complete .sync-panel,
+.sim-complete .control-panel {
+  animation: animeComplete 1.6s ease-in-out infinite;
+  border-color: rgba(255, 207, 74, 0.6) !important;
+}
+
+.sim-complete .control-panel::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58% 100%);
+  background-size: 280% 100%;
+  mix-blend-mode: screen;
+  animation: energySweep 1.8s ease-in-out infinite;
+  content: '';
+}
+
+@keyframes animeComplete {
+  0%,
+  100% {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 18px 46px rgba(0, 0, 0, 0.34), 0 0 0 rgba(255, 207, 74, 0);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 18px 46px rgba(0, 0, 0, 0.34),
+      0 0 42px rgba(255, 207, 74, 0.4),
+      0 0 0 2px rgba(255, 59, 107, 0.18);
+  }
+}
+
+@keyframes energySweep {
+  from {
+    background-position: 180% 0;
+  }
+
+  to {
+    background-position: -80% 0;
+  }
+}
+
+/* ── 主角能量光環升級（主城）───────────────────────────────── */
+.idle-player-aura {
+  background: radial-gradient(circle, rgba(56, 242, 230, 0.5), rgba(176, 123, 255, 0.18) 55%, transparent 72%) !important;
+  filter: blur(2px);
+  animation: heroAura 2.6s ease-in-out infinite;
+}
+
+@keyframes heroAura {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+/* 任務門核心：能量脈動光 */
+.gate-core {
+  box-shadow: 0 0 26px rgba(56, 242, 230, 0.4);
+}
+
+.mission-gate.active .gate-core,
+.mission-gate.done .gate-core {
+  box-shadow: 0 0 34px rgba(255, 207, 74, 0.55);
+}
+
+/* 觀測員「最後推理」狀態：緋紅召喚光環 */
+.observer-npc.final-ready .observer-aura {
+  background: radial-gradient(circle, rgba(255, 59, 107, 0.55), transparent 68%) !important;
+  animation: heroAura 1.4s ease-in-out infinite;
+}
+
+/* ── 音效開關鈕 ────────────────────────────────────────────── */
+.audio-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(56, 242, 230, 0.4);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(7, 14, 28, 0.86));
+  box-shadow: 0 0 18px rgba(56, 242, 230, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.audio-toggle:hover {
+  transform: scale(1.08);
+  border-color: rgba(56, 242, 230, 0.85);
+  box-shadow: 0 0 26px rgba(56, 242, 230, 0.4);
+}
+
+.audio-toggle.sim-audio {
+  top: 18px;
+  right: 86px;
+}
+
+/* ── View 轉場：能量淡入上浮 ───────────────────────────────── */
+.view-enter {
+  animation: viewEnter 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: scale(1.012) translateY(8px);
+    filter: saturate(1.5) brightness(1.25);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: saturate(1) brightness(1);
+  }
+}
+
+/* ── DOM 粒子爆發（juice.ts 產生）──────────────────────────── */
+.juice-burst-layer i {
+  transform: translate(0, 0) scale(1);
+  opacity: 1;
+}
+
+@keyframes juiceParticle {
+  to {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ── 行動裝置：音效鈕避免與其他 HUD 重疊 ───────────────────── */
+@media (max-width: 560px) {
+  .audio-toggle {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+  }
+
+  .audio-toggle.sim-audio {
+    right: 72px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * SVG 美術整合層 —— 用真正的插畫取代 CSS「方塊人」與塔樓
+ * ════════════════════════════════════════════════════════════════ */
+
+/* 天際線插畫：貼齊場景底部、滿版、置於最底層 */
+.skyline-art {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 0;
+  width: min(1280px, 116%);
+  height: auto;
+  transform: translateX(-50%);
+  opacity: 0.9;
+  pointer-events: none;
+  filter: drop-shadow(0 0 40px rgba(56, 242, 230, 0.12));
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%);
+  mask-image: linear-gradient(180deg, transparent, #000 18%);
+}
+
+.clockwork-scene.hub .skyline-art {
+  opacity: 0.7;
+}
+
+/* 場景中的角色插畫（序章 hero + mentor）取代方塊人 */
+.scene-figure {
+  position: absolute;
+  bottom: 13%;
+  z-index: 1;
+  width: clamp(120px, 14vw, 188px);
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 26px rgba(2, 6, 23, 0.6));
+  animation: idleFloat 5s ease-in-out infinite;
+}
+
+.scene-figure.hero {
+  left: 8%;
+}
+
+.scene-figure.mentor {
+  left: 24%;
+  width: clamp(104px, 12vw, 156px);
+  animation-delay: 0.8s;
+}
+
+/* hub 模式下角色淡出，讓主城玩家當主角 */
+.clockwork-scene.hub .scene-figure {
+  opacity: 0.32;
+  filter: drop-shadow(0 18px 26px rgba(2, 6, 23, 0.6)) blur(1px);
+}
+
+/* 觀測員 NPC 插畫（取代 span 方塊）*/
+.observer-npc .observer-body {
+  display: block;
+  width: clamp(72px, 8vw, 104px);
+  height: auto;
+  margin: 0 auto;
+  filter: drop-shadow(0 10px 18px rgba(2, 6, 23, 0.55));
+  animation: townPlayerIdle 4.2s ease-in-out infinite;
+}
+
+.observer-npc.final-ready .observer-body {
+  filter: drop-shadow(0 0 22px rgba(255, 59, 107, 0.5)) drop-shadow(0 10px 18px rgba(2, 6, 23, 0.55));
+}
+
+/* 對話框觀測員肖像 */
+.observer-dialog-portrait .observer-avatar {
+  display: block;
+  width: clamp(88px, 12vw, 128px);
+  height: auto;
+  filter: drop-shadow(0 0 20px rgba(56, 242, 230, 0.28));
+}
+
+/* 確保插畫不被舊的方塊偽元素干擾 */
+.observer-body::before,
+.observer-body::after,
+.observer-avatar::before,
+.observer-avatar::after {
+  content: none !important;
+}

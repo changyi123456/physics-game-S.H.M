@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { challengeMap, type ChallengeId, type ControlKey, type GameSettingsRef } from './astrolabeModel'
+import { juice } from './juice'
 
 type Star = { x: number; y: number; size: number; phase: number; drift: number }
 type TrailPoint = { x: number; y: number; life: number }
@@ -253,6 +254,10 @@ export class AstrolabeScene extends Phaser.Scene {
       x: dragX,
       y: dragY,
     }
+    // 各關抓取音效
+    if (mode === 'orbit-launch') juice.playScene('orbit-grab')
+    else if (mode === 'spring-block') juice.playScene('spring-grab')
+    else if (mode === 'pendulum-bob') juice.playScene('pendulum-grab')
     if (mode === 'orbit-launch') this.updateDragPatch(width, height)
     this.cameras.main.shake(70, 0.0008)
   }
@@ -365,6 +370,7 @@ export class AstrolabeScene extends Phaser.Scene {
       const amplitude = Math.abs(drag.x - cx) / scale
       this.phase = drag.x >= cx ? 0 : Math.PI / omega
       this.emitValuePatch({ amplitude })
+      juice.playScene('spring-release')
       return
     }
 
@@ -376,6 +382,7 @@ export class AstrolabeScene extends Phaser.Scene {
       const frequency = Math.sqrt(values.gravity / (values.length / 100))
       this.phase = dx >= 0 ? 0 : Math.PI / frequency
       this.emitValuePatch({ angle })
+      juice.playScene('pendulum-release')
     }
   }
 
@@ -436,6 +443,7 @@ export class AstrolabeScene extends Phaser.Scene {
       launched: true,
       trail: [{ x: this.slingshot.x, y: this.slingshot.y }],
     }
+    juice.playScene('orbit-launch')
     this.emitValuePatch({ shotScore: 0 })
   }
 
@@ -464,6 +472,7 @@ export class AstrolabeScene extends Phaser.Scene {
       this.slingshot.launched = false
       this.emitSpark(target.x, target.y, 0xfbbf24, 40, 220 * scale, 4.2 * scale)
       this.cameras.main.flash(360, 251, 191, 36, true)
+      juice.playScene('orbit-hit')
       this.emitValuePatch({ shotScore: 1 })
     }
 
@@ -1272,6 +1281,7 @@ export class AstrolabeScene extends Phaser.Scene {
     this.fx.fillCircle(cx, cy, 190 * scale)
     this.fx.lineStyle(3, tone.secondary, 0.34 + pulse * 0.24)
     this.fx.strokeCircle(cx, cy, 210 * scale + pulse * 10 * scale)
+    // 動漫式放射「斬擊光線」：雙層、會旋轉，偶數白、奇數能量金
     this.fx.lineStyle(1, 0xf8fafc, 0.2)
     for (let i = 0; i < 14; i += 1) {
       const a = (Math.PI * 2 * i) / 14 + time / 950
@@ -1280,7 +1290,24 @@ export class AstrolabeScene extends Phaser.Scene {
       this.fx.lineTo(cx + Math.cos(a) * 246 * scale, cy + Math.sin(a) * 246 * scale)
       this.fx.strokePath()
     }
-    this.emitSpark(cx, cy, tone.secondary, 2, 210 * scale, 3 * scale)
+    // 第二圈反向旋轉的能量緋紅長芒
+    this.fx.lineStyle(2, 0xff3b6b, 0.18 + pulse * 0.18)
+    for (let i = 0; i < 6; i += 1) {
+      const a = (Math.PI * 2 * i) / 6 - time / 700
+      this.fx.beginPath()
+      this.fx.moveTo(cx + Math.cos(a) * 96 * scale, cy + Math.sin(a) * 96 * scale)
+      this.fx.lineTo(cx + Math.cos(a) * 290 * scale, cy + Math.sin(a) * 290 * scale)
+      this.fx.strokePath()
+    }
+    // 額外的明亮擴張環（能量金）
+    this.fx.lineStyle(2, 0xffcf4a, 0.22 + pulse * 0.3)
+    this.fx.strokeCircle(cx, cy, (150 + pulse * 60) * scale)
+
+    // 多彩能量火花爆發（青 / 緋紅 / 金交錯）
+    const energyColors = [0x38f2e6, 0xff3b6b, 0xffcf4a]
+    energyColors.forEach((color, i) =>
+      this.emitSpark(cx, cy, color, 2, (200 + i * 30) * scale, 3 * scale),
+    )
   }
 
   private emitSpark(x: number, y: number, color: number, count = 1, speed = 48, size = 2.4) {

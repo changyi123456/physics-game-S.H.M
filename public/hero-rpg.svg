@@ -41,6 +41,12 @@
       <stop offset="0.7" stop-color="#0f766e"/>
       <stop offset="1" stop-color="#0f172a" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="energyAura" cx="0" cy="0" r="1" gradientTransform="matrix(150 0 0 200 160 240)" gradientUnits="userSpaceOnUse">
+      <stop offset="0.3" stop-color="#38f2e6" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#38f2e6" stop-opacity="0.22"/>
+      <stop offset="0.86" stop-color="#b07bff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ff3b6b" stop-opacity="0"/>
+    </radialGradient>
     <filter id="characterShadow" x="34" y="22" width="250" height="424" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
       <feDropShadow dx="0" dy="16" stdDeviation="10" flood-color="#020617" flood-opacity="0.55"/>
       <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#5eead4" flood-opacity="0.22"/>
@@ -54,6 +60,9 @@
       </feMerge>
     </filter>
   </defs>
+
+  <!-- 咒力能量背光環（靜態；動態脈動由 CSS .idle-player-aura 負責）-->
+  <ellipse cx="160" cy="240" rx="150" ry="200" fill="url(#energyAura)"/>
 
   <g opacity="0.92">
     <ellipse cx="160" cy="429" rx="92" ry="18" fill="#020617" opacity="0.48"/>
