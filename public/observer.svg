@@ -1,91 +1,122 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360" role="img" aria-label="觀測員艾菈">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 340" role="img" aria-label="觀測員艾菈">
   <defs>
-    <linearGradient id="ob-cloak" x1="60" y1="120" x2="180" y2="340" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2b1a4d"/>
-      <stop offset="0.5" stop-color="#3a2168"/>
-      <stop offset="1" stop-color="#150a2a"/>
+    <linearGradient id="o-aura" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.3" stop-color="#b07bff" stop-opacity="0"/>
+      <stop offset="0.72" stop-color="#b07bff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#38f2e6" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="ob-cloakLight" x1="80" y1="150" x2="150" y2="320" gradientUnits="userSpaceOnUse">
+    <linearGradient id="o-hair" x1="70" y1="30" x2="190" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#cfe6ff"/>
+      <stop offset="0.45" stop-color="#7aa8ff"/>
+      <stop offset="1" stop-color="#6b3fd0"/>
+    </linearGradient>
+    <linearGradient id="o-robe" x1="78" y1="158" x2="186" y2="306" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3a2168"/>
+      <stop offset="0.5" stop-color="#271548"/>
+      <stop offset="1" stop-color="#140a2a"/>
+    </linearGradient>
+    <linearGradient id="o-robeLight" x1="90" y1="170" x2="150" y2="300" gradientUnits="userSpaceOnUse">
       <stop stop-color="#7b5cff"/>
       <stop offset="1" stop-color="#3a2168" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="ob-hair" x1="80" y1="40" x2="160" y2="150" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#9be7ff"/>
-      <stop offset="0.5" stop-color="#4aa8ff"/>
-      <stop offset="1" stop-color="#1e3a8a"/>
+    <linearGradient id="o-skin" x1="100" y1="74" x2="158" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff3ee"/>
+      <stop offset="1" stop-color="#f0c0ab"/>
     </linearGradient>
-    <linearGradient id="ob-skin" x1="100" y1="70" x2="140" y2="120" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff1e6"/>
-      <stop offset="1" stop-color="#e8b58f"/>
-    </linearGradient>
-    <radialGradient id="ob-aura" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0.35" stop-color="#38f2e6" stop-opacity="0"/>
-      <stop offset="0.75" stop-color="#38f2e6" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#b07bff" stop-opacity="0"/>
+    <radialGradient id="o-eye" cx="0.5" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#e7c9ff"/>
+      <stop offset="0.6" stop-color="#a06bff"/>
+      <stop offset="1" stop-color="#3a1d6b"/>
     </radialGradient>
-    <radialGradient id="ob-orb" cx="0.4" cy="0.35" r="0.7">
+    <radialGradient id="o-orb" cx="0.42" cy="0.36" r="0.7">
       <stop offset="0" stop-color="#fff7e0"/>
       <stop offset="0.4" stop-color="#ffcf4a"/>
-      <stop offset="1" stop-color="#ff3b6b"/>
+      <stop offset="1" stop-color="#ff5d7a"/>
     </radialGradient>
-    <filter id="ob-bloom" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="4"/>
-    </filter>
   </defs>
 
   <!-- 能量光環 -->
-  <ellipse cx="120" cy="190" rx="118" ry="160" fill="url(#ob-aura)"/>
-
+  <ellipse cx="130" cy="178" rx="120" ry="158" fill="url(#o-aura)"/>
   <!-- 地面影 -->
-  <ellipse cx="120" cy="344" rx="74" ry="13" fill="#050314" opacity="0.5"/>
-  <ellipse cx="120" cy="342" rx="50" ry="7" fill="#7b5cff" opacity="0.3"/>
+  <ellipse cx="130" cy="320" rx="66" ry="12" fill="#06031a" opacity="0.5"/>
+  <ellipse cx="130" cy="318" rx="44" ry="6" fill="#7b5cff" opacity="0.3"/>
 
-  <!-- 斗篷主體 -->
-  <path fill="url(#ob-cloak)" stroke="#0c0620" stroke-width="4" stroke-linejoin="round"
-    d="M120 120c34 0 58 22 66 60 9 44 12 104 8 158-26 10-49 14-74 14s-48-4-74-14c-4-54-1-114 8-158 8-38 32-60 66-60Z"/>
-  <path fill="url(#ob-cloakLight)" opacity="0.55"
-    d="M120 126c-22 4-37 24-43 58-7 40-9 96-6 146 14 6 30 9 49 10-9-66-9-148 0-214Z"/>
-  <!-- 斗篷內裡能量紋 -->
-  <path fill="none" stroke="#38f2e6" stroke-width="2.5" opacity="0.6"
-    d="M96 196c0 50 4 96 12 138M144 196c0 50-4 96-12 138"/>
-  <path fill="none" stroke="#ffcf4a" stroke-width="2" opacity="0.5"
-    d="M120 150v176"/>
+  <!-- 後方長髮 -->
+  <path fill="url(#o-hair)" stroke="#160a30" stroke-width="4" stroke-linejoin="round"
+    d="M70 116c-10-58 24-92 60-92s70 34 60 92c-6 36-2 96 6 150-26 12-106 12-138 0 8-54 18-114 12-150Z"/>
+  <!-- 髮絲層次 -->
+  <path fill="#160a30" opacity="0.28" d="M96 150c-2 50-6 96 0 142l-14-4c-6-46-2-94 4-140l10 2Z"/>
+  <path fill="#cfe6ff" opacity="0.4" d="M84 130c-6 44-6 92 0 138l-8-2c-6-46-4-94 2-138l6 2Z"/>
 
-  <!-- 兜帽肩 -->
-  <path fill="#241245" stroke="#0c0620" stroke-width="4" stroke-linejoin="round"
-    d="M120 120c-28 0-50 16-58 40 18-14 40-20 58-20s40 6 58 20c-8-24-30-40-58-40Z"/>
+  <!-- 兜帽斗篷 -->
+  <path fill="url(#o-robe)" stroke="#160a30" stroke-width="4.5" stroke-linejoin="round"
+    d="M88 166c12-14 72-14 84 0 14 34 22 90 18 144-38 14-100 14-138 0-4-54 4-110 18-144Z"/>
+  <path fill="url(#o-robeLight)" opacity="0.5"
+    d="M104 168c-12 32-18 86-16 138 14 4 22 5 30 5-8-50-8-100 0-148-6-2-10-2-14 5Z"/>
+  <!-- 斗篷能量紋 -->
+  <path fill="none" stroke="#38f2e6" stroke-width="2.5" opacity="0.55" d="M104 200c-2 40 0 78 6 104M156 200c2 40 0 78-6 104"/>
+  <path fill="none" stroke="#ffcf4a" stroke-width="2" opacity="0.5" d="M130 188v118"/>
+  <!-- 肩兜 -->
+  <path fill="#2a164d" stroke="#160a30" stroke-width="4" stroke-linejoin="round"
+    d="M130 158c-26 0-46 14-54 36 16-12 36-18 54-18s38 6 54 18c-8-22-28-36-54-36Z"/>
 
-  <!-- 頭髮（後） -->
-  <path fill="url(#ob-hair)" d="M82 96c-8-40 18-70 38-70s46 30 38 70c-6 30-2 54 4 78-14 8-30 12-42 12s-28-4-42-12c6-24 10-48 4-78Z" opacity="0.95"/>
+  <!-- 脖子 -->
+  <rect x="120" y="138" width="20" height="16" rx="6" fill="url(#o-skin)" stroke="#d49a82" stroke-width="2"/>
+
   <!-- 臉 -->
-  <path fill="url(#ob-skin)" stroke="#c98a63" stroke-width="1.5"
-    d="M98 88c4-20 16-30 22-30s18 10 22 30c3 16-2 34-22 36-20-2-25-20-22-36Z"/>
-  <!-- 瀏海 -->
-  <path fill="url(#ob-hair)" d="M96 84c4-30 22-46 24-46s20 16 24 46c-12-8-22-10-24-10s-12 2-24 10Z"/>
-  <!-- 觀測員護目鏡（單眼能量鏡） -->
-  <g>
-    <rect x="100" y="92" width="40" height="13" rx="6" fill="#0b1626" stroke="#38f2e6" stroke-width="2"/>
-    <circle cx="128" cy="98.5" r="4.5" fill="#38f2e6" filter="url(#ob-bloom)"/>
-    <circle cx="128" cy="98.5" r="2.5" fill="#eafffd"/>
-    <circle cx="110" cy="98.5" r="2" fill="#4aa8ff" opacity="0.7"/>
-  </g>
-  <!-- 微笑 -->
-  <path d="M114 116c4 3 8 3 12 0" fill="none" stroke="#a85a4a" stroke-width="2" stroke-linecap="round"/>
+  <path fill="url(#o-skin)" stroke="#d49a82" stroke-width="2"
+    d="M93 100c0-30 16-46 37-46s37 16 37 46c0 26-16 44-37 44s-37-18-37-44Z"/>
 
-  <!-- 懸浮星盤（手中能量球） -->
+  <!-- 瀏海 + 兩側髮束 -->
+  <path fill="url(#o-hair)" stroke="#160a30" stroke-width="4" stroke-linejoin="round"
+    d="M88 104c-6-42 20-68 42-68s48 26 42 68c-6-20-12-30-22-34-6 12-16 20-30 24-12 4-22 6-32 10Z"/>
+  <path fill="url(#o-hair)" stroke="#160a30" stroke-width="3.5" stroke-linejoin="round"
+    d="M92 96c-6 30-6 60 2 92l-16-6c-8-30-6-62 2-90l12 4Z"/>
+  <path fill="url(#o-hair)" stroke="#160a30" stroke-width="3.5" stroke-linejoin="round"
+    d="M168 96c6 30 6 60-2 92l16-6c8-30 6-62-2-90l-12 4Z"/>
+
+  <!-- 眉 -->
+  <path d="M101 96q12-5 21 0" fill="none" stroke="#6b4fa0" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M138 96q12-5 21 0" fill="none" stroke="#6b4fa0" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- 眼睛（大眼，沉靜）-->
   <g>
-    <circle cx="120" cy="232" r="34" fill="url(#ob-orb)" opacity="0.28" filter="url(#ob-bloom)"/>
-    <circle cx="120" cy="232" r="17" fill="url(#ob-orb)"/>
-    <ellipse cx="120" cy="232" rx="32" ry="11" fill="none" stroke="#38f2e6" stroke-width="2.5"/>
-    <ellipse cx="120" cy="232" rx="11" ry="32" fill="none" stroke="#ffcf4a" stroke-width="2" opacity="0.7"/>
-    <circle cx="120" cy="232" r="5" fill="#fff7e0"/>
+    <ellipse cx="111" cy="114" rx="11.5" ry="15.5" fill="#160a30"/>
+    <ellipse cx="111" cy="117" rx="9" ry="12" fill="url(#o-eye)"/>
+    <circle cx="107" cy="109" r="4" fill="#ffffff"/>
+    <circle cx="114" cy="121" r="2" fill="#f0e0ff" opacity="0.85"/>
+    <path d="M99 105q12-7 25 0" fill="none" stroke="#160a30" stroke-width="3.2" stroke-linecap="round"/>
+  </g>
+  <!-- 右眼：觀測員能量單眼鏡 -->
+  <g>
+    <ellipse cx="149" cy="114" rx="11.5" ry="15.5" fill="#160a30"/>
+    <ellipse cx="149" cy="117" rx="9" ry="12" fill="url(#o-eye)"/>
+    <circle cx="145" cy="109" r="4" fill="#ffffff"/>
+    <circle cx="149" cy="114" r="15" fill="none" stroke="#38f2e6" stroke-width="2.5"/>
+    <path d="M164 114h12" stroke="#38f2e6" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="149" cy="114" r="3" fill="#38f2e6" opacity="0.5"/>
+  </g>
+
+  <!-- 鼻嘴 + 腮紅 -->
+  <path d="M128 122l3.5 6h-6Z" fill="#d49a82" opacity="0.5"/>
+  <path d="M123 132q7 5 14 0" fill="none" stroke="#a8505f" stroke-width="2.2" stroke-linecap="round"/>
+  <ellipse cx="103" cy="126" rx="6.5" ry="3.6" fill="#ff8fb0" opacity="0.4"/>
+  <ellipse cx="157" cy="126" rx="6.5" ry="3.6" fill="#ff8fb0" opacity="0.4"/>
+
+  <!-- 懸浮星盤（雙手前方） -->
+  <g transform="translate(130 232)">
+    <circle r="34" fill="url(#o-orb)" opacity="0.26"/>
+    <circle r="16" fill="url(#o-orb)"/>
+    <ellipse rx="32" ry="11" fill="none" stroke="#38f2e6" stroke-width="2.5"/>
+    <ellipse rx="11" ry="32" fill="none" stroke="#ffcf4a" stroke-width="2" opacity="0.75"/>
+    <circle r="5" fill="#fff7e0"/>
   </g>
 
   <!-- 浮動光點 -->
   <g>
-    <circle cx="60" cy="170" r="3" fill="#38f2e6"/>
-    <circle cx="182" cy="200" r="3.5" fill="#ffcf4a"/>
-    <circle cx="176" cy="120" r="2.5" fill="#b07bff"/>
-    <circle cx="54" cy="240" r="2.5" fill="#ff3b6b"/>
+    <circle cx="58" cy="172" r="3" fill="#38f2e6"/>
+    <circle cx="202" cy="198" r="3.5" fill="#ffcf4a"/>
+    <circle cx="196" cy="120" r="2.5" fill="#b07bff"/>
+    <circle cx="56" cy="244" r="2.5" fill="#ff5d7a"/>
   </g>
 </svg>

@@ -1,127 +1,141 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 460" role="img" aria-label="Chrono RPG hero">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 340" role="img" aria-label="見習調律師">
   <defs>
-    <linearGradient id="capeMain" x1="96" x2="222" y1="120" y2="392" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0f172a"/>
-      <stop offset="0.48" stop-color="#123a4c"/>
-      <stop offset="1" stop-color="#06252c"/>
-    </linearGradient>
-    <linearGradient id="coatMain" x1="115" x2="208" y1="158" y2="374" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#43e0cf"/>
-      <stop offset="0.38" stop-color="#117c7f"/>
-      <stop offset="1" stop-color="#0b293a"/>
-    </linearGradient>
-    <linearGradient id="coatShade" x1="116" x2="206" y1="196" y2="372" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0d9488"/>
-      <stop offset="0.62" stop-color="#134e4a"/>
-      <stop offset="1" stop-color="#0b1120"/>
-    </linearGradient>
-    <linearGradient id="rimCyan" x1="96" x2="238" y1="76" y2="398" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#e0fffb"/>
-      <stop offset="0.36" stop-color="#5eead4"/>
-      <stop offset="1" stop-color="#0e7490"/>
-    </linearGradient>
-    <linearGradient id="scarf" x1="100" x2="246" y1="152" y2="196" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#facc15"/>
-      <stop offset="0.5" stop-color="#fb7185"/>
-      <stop offset="1" stop-color="#7c3aed"/>
-    </linearGradient>
-    <linearGradient id="skin" x1="134" x2="185" y1="74" y2="138" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff7ed"/>
-      <stop offset="0.6" stop-color="#f8c9a6"/>
-      <stop offset="1" stop-color="#c9825b"/>
-    </linearGradient>
-    <linearGradient id="hair" x1="112" x2="194" y1="46" y2="125" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#f8fafc"/>
-      <stop offset="0.4" stop-color="#cbd5e1"/>
-      <stop offset="1" stop-color="#64748b"/>
-    </linearGradient>
-    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientTransform="matrix(42 0 0 42 162 230)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fef3c7"/>
-      <stop offset="0.33" stop-color="#fbbf24"/>
-      <stop offset="0.7" stop-color="#0f766e"/>
-      <stop offset="1" stop-color="#0f172a" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="energyAura" cx="0" cy="0" r="1" gradientTransform="matrix(150 0 0 200 160 240)" gradientUnits="userSpaceOnUse">
+    <linearGradient id="h-aura" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.3" stop-color="#38f2e6" stop-opacity="0"/>
-      <stop offset="0.7" stop-color="#38f2e6" stop-opacity="0.22"/>
-      <stop offset="0.86" stop-color="#b07bff" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#ff3b6b" stop-opacity="0"/>
+      <stop offset="0.72" stop-color="#38f2e6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#b07bff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="h-hair" x1="80" y1="36" x2="180" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eafdff"/>
+      <stop offset="0.5" stop-color="#7fe9ff"/>
+      <stop offset="1" stop-color="#2aa9d6"/>
+    </linearGradient>
+    <linearGradient id="h-coat" x1="78" y1="160" x2="186" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3fe0cf"/>
+      <stop offset="0.55" stop-color="#15889a"/>
+      <stop offset="1" stop-color="#0c3b50"/>
+    </linearGradient>
+    <linearGradient id="h-skin" x1="100" y1="74" x2="158" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff3e9"/>
+      <stop offset="1" stop-color="#f3c4a3"/>
+    </linearGradient>
+    <linearGradient id="h-scarf" x1="96" y1="150" x2="166" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffd24a"/>
+      <stop offset="1" stop-color="#ff5d7a"/>
+    </linearGradient>
+    <radialGradient id="h-eye" cx="0.5" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#baf6ff"/>
+      <stop offset="0.6" stop-color="#22c3e6"/>
+      <stop offset="1" stop-color="#0b3a52"/>
     </radialGradient>
-    <filter id="characterShadow" x="34" y="22" width="250" height="424" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="16" stdDeviation="10" flood-color="#020617" flood-opacity="0.55"/>
-      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#5eead4" flood-opacity="0.22"/>
-    </filter>
-    <filter id="softBloom" x="70" y="86" width="178" height="214" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feColorMatrix in="blur" result="glow" type="matrix" values="1.3 0 0 0 0 0 1.4 0 0 0 0 0 1.5 0 0 0 0 0 .72 0"/>
-      <feMerge>
-        <feMergeNode in="glow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <radialGradient id="h-gear" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7e0"/>
+      <stop offset="0.5" stop-color="#7fe9ff"/>
+      <stop offset="1" stop-color="#38f2e6" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <!-- 咒力能量背光環（靜態；動態脈動由 CSS .idle-player-aura 負責）-->
-  <ellipse cx="160" cy="240" rx="150" ry="200" fill="url(#energyAura)"/>
+  <!-- 能量光環 -->
+  <ellipse cx="130" cy="178" rx="120" ry="158" fill="url(#h-aura)"/>
+  <!-- 地面影 -->
+  <ellipse cx="130" cy="320" rx="64" ry="12" fill="#04101e" opacity="0.5"/>
+  <ellipse cx="130" cy="318" rx="42" ry="6" fill="#38f2e6" opacity="0.28"/>
 
-  <g opacity="0.92">
-    <ellipse cx="160" cy="429" rx="92" ry="18" fill="#020617" opacity="0.48"/>
-    <ellipse cx="160" cy="426" rx="66" ry="9" fill="#5eead4" opacity="0.26"/>
+  <!-- 後髮 -->
+  <path fill="url(#h-hair)" stroke="#0b1426" stroke-width="4" stroke-linejoin="round"
+    d="M70 110c-6-52 26-86 60-86s66 34 60 86c-4 32 4 40 8 54-28 14-108 14-136 0 4-14 12-22 8-54Z"/>
+
+  <!-- 身體：外套 -->
+  <path fill="url(#h-coat)" stroke="#0b1426" stroke-width="4.5" stroke-linejoin="round"
+    d="M92 168c12-12 64-12 76 0 12 30 20 70 22 118-40 16-102 16-142 0 2-48 10-88 22-118Z"/>
+  <!-- 外套陰影（右半） -->
+  <path fill="#0b3b50" opacity="0.42"
+    d="M130 162c14 36 20 86 22 124 16-2 30-5 38-9-2-46-10-86-22-116-10-8-26-9-38 1Z"/>
+  <!-- 中線扣帶 -->
+  <path fill="none" stroke="#eafdff" stroke-width="3" opacity="0.5" d="M130 176v118"/>
+  <!-- 鈕扣 -->
+  <g fill="#ffd24a"><circle cx="130" cy="200" r="4"/><circle cx="130" cy="226" r="4"/><circle cx="130" cy="252" r="4"/></g>
+
+  <!-- 腿與靴 -->
+  <g fill="#16243a" stroke="#0b1426" stroke-width="3">
+    <rect x="112" y="282" width="16" height="40" rx="7"/>
+    <rect x="132" y="282" width="16" height="40" rx="7"/>
+  </g>
+  <g fill="#0b1426"><ellipse cx="118" cy="322" rx="14" ry="7"/><ellipse cx="142" cy="322" rx="14" ry="7"/></g>
+
+  <!-- 左臂（垂下） -->
+  <path fill="url(#h-coat)" stroke="#0b1426" stroke-width="4" stroke-linejoin="round"
+    d="M92 176c-16 8-26 30-26 58 0 10 3 20 8 28 8-4 14-12 16-22l8-56-6-8Z"/>
+  <!-- 右臂（舉起，扶齒輪） -->
+  <path fill="url(#h-coat)" stroke="#0b1426" stroke-width="4" stroke-linejoin="round"
+    d="M168 176c20 0 36 12 44 32 3 8 2 16-2 22-8-2-16-8-20-16l-28-30 6-8Z"/>
+
+  <!-- 圍巾 -->
+  <path fill="url(#h-scarf)" stroke="#0b1426" stroke-width="3.5" stroke-linejoin="round"
+    d="M98 152c20 12 44 12 64 0 6 6 8 14 6 22-24 10-52 10-76 0-2-8 0-16 6-22Z"/>
+  <path fill="#ff5d7a" d="M150 168c8 4 12 14 10 30l-12-4 2-26Z" opacity="0.7"/>
+
+  <!-- 脖子 -->
+  <rect x="120" y="140" width="20" height="16" rx="6" fill="url(#h-skin)" stroke="#d79e7c" stroke-width="2"/>
+
+  <!-- 臉 -->
+  <path fill="url(#h-skin)" stroke="#d79e7c" stroke-width="2"
+    d="M92 100c0-30 16-46 38-46s38 16 38 46c0 26-16 44-38 44s-38-18-38-44Z"/>
+  <!-- 耳 -->
+  <circle cx="92" cy="104" r="7" fill="url(#h-skin)" stroke="#d79e7c" stroke-width="2"/>
+  <circle cx="168" cy="104" r="7" fill="url(#h-skin)" stroke="#d79e7c" stroke-width="2"/>
+
+  <!-- 瀏海（前髮）尖刺 -->
+  <path fill="url(#h-hair)" stroke="#0b1426" stroke-width="4" stroke-linejoin="round"
+    d="M86 104c-4-40 22-66 44-66s48 26 44 66c-6-18-16-30-30-34-4 10-12 18-22 22-8 4-20 8-36 12Zm44-44c-10 2-18 10-22 24 10-4 18-10 22-18 4 8 12 14 22 18-4-14-12-22-22-24Z"/>
+  <!-- 翹起的呆毛 -->
+  <path fill="url(#h-hair)" stroke="#0b1426" stroke-width="3" stroke-linejoin="round"
+    d="M128 30c10-8 22-6 28 4-12-2-20 2-26 12-2-6-4-12-2-16Z"/>
+
+  <!-- 眉 -->
+  <path d="M100 96q12-6 22 0" fill="none" stroke="#5a4636" stroke-width="3" stroke-linecap="round"/>
+  <path d="M138 96q12-6 22 0" fill="none" stroke="#5a4636" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 眼睛（大眼動漫） -->
+  <g>
+    <!-- 左眼 -->
+    <ellipse cx="111" cy="114" rx="12" ry="16" fill="#0b1426"/>
+    <ellipse cx="111" cy="117" rx="9.5" ry="12.5" fill="url(#h-eye)"/>
+    <circle cx="107" cy="109" r="4.2" fill="#ffffff"/>
+    <circle cx="114" cy="121" r="2.2" fill="#d8ffff" opacity="0.85"/>
+    <path d="M98 104q13-7 26 0" fill="none" stroke="#0b1426" stroke-width="3.4" stroke-linecap="round"/>
+    <!-- 右眼 -->
+    <ellipse cx="149" cy="114" rx="12" ry="16" fill="#0b1426"/>
+    <ellipse cx="149" cy="117" rx="9.5" ry="12.5" fill="url(#h-eye)"/>
+    <circle cx="145" cy="109" r="4.2" fill="#ffffff"/>
+    <circle cx="152" cy="121" r="2.2" fill="#d8ffff" opacity="0.85"/>
+    <path d="M136 104q13-7 26 0" fill="none" stroke="#0b1426" stroke-width="3.4" stroke-linecap="round"/>
+  </g>
+  <!-- 鼻與嘴 -->
+  <path d="M128 122l4 6h-6Z" fill="#d79e7c" opacity="0.5"/>
+  <path d="M122 132q8 6 16 0" fill="none" stroke="#a8503f" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- 腮紅 -->
+  <ellipse cx="102" cy="126" rx="7" ry="4" fill="#ff8fa3" opacity="0.4"/>
+  <ellipse cx="158" cy="126" rx="7" ry="4" fill="#ff8fa3" opacity="0.4"/>
+
+  <!-- 懸浮齒輪（右手上方）-->
+  <g transform="translate(206 150)">
+    <circle r="26" fill="url(#h-gear)" opacity="0.7"/>
+    <g fill="#cfeffb" stroke="#0b1426" stroke-width="2">
+      <circle r="14"/>
+      <g>
+        <rect x="-3" y="-20" width="6" height="8" rx="1"/>
+        <rect x="-3" y="12" width="6" height="8" rx="1"/>
+        <rect x="-20" y="-3" width="8" height="6" rx="1"/>
+        <rect x="12" y="-3" width="8" height="6" rx="1"/>
+        <rect x="-16" y="-16" width="6" height="7" rx="1" transform="rotate(45)"/>
+        <rect x="10" y="-16" width="6" height="7" rx="1" transform="rotate(-45)"/>
+      </g>
+    </g>
+    <circle r="5" fill="#ffd24a"/>
   </g>
 
-  <g filter="url(#characterShadow)">
-    <path fill="url(#capeMain)" stroke="#020617" stroke-linejoin="round" stroke-width="6" d="M112 140c-37 26-55 76-54 150 1 57 24 104 47 122 17-23 32-35 54-35 23 0 47 12 64 35 28-28 43-78 40-129-4-70-27-120-64-144-18 8-66 8-87 1Z"/>
-    <path fill="#0b1120" d="M77 246c10 8 23 13 38 17l-14 115c-23-25-37-72-24-132Z" opacity="0.62"/>
-    <path fill="#132b3a" d="M240 242c-9 10-23 19-40 24l18 111c21-29 36-83 22-135Z" opacity="0.72"/>
-
-    <path fill="url(#rimCyan)" d="M226 181c12 31 17 72 14 108-3 45-15 78-31 102 33-24 55-73 54-124-1-39-13-70-37-86Z" opacity="0.3"/>
-    <path fill="#5eead4" d="M99 155c-19 25-29 68-27 116 0 16 2 31 6 44-10-58 5-116 42-157l-21-3Z" opacity="0.2"/>
-
-    <path fill="url(#coatMain)" stroke="#020617" stroke-linejoin="round" stroke-width="5" d="M118 163c16-14 69-14 85 0 15 47 23 116 17 209-39 18-83 18-122 0-6-92 2-162 20-209Z"/>
-    <path fill="url(#coatShade)" d="M158 164c19 38 24 117 13 220 15-1 31-5 48-12 6-93-2-162-17-209-9-8-27-11-44 1Z" opacity="0.68"/>
-    <path fill="#f8fafc" d="M139 166c7 30 11 70 11 120 0 38-3 70-8 96l17 5c7-38 9-80 7-126-2-42-7-76-16-101l-11 6Z" opacity="0.16"/>
-
-    <path fill="#0f172a" stroke="#020617" stroke-linejoin="round" stroke-width="5" d="M118 168c-21 10-37 34-44 67 9 14 28 23 51 21l18-80-25-8Z"/>
-    <path fill="#0f172a" stroke="#020617" stroke-linejoin="round" stroke-width="5" d="M203 168c22 12 36 34 42 67-10 15-29 23-52 21l-17-79 27-9Z"/>
-    <path fill="#5eead4" d="M84 229c11 8 23 12 38 12l-3 14c-18 1-34-5-45-18 3-3 6-6 10-8Z" opacity="0.36"/>
-    <path fill="#fbbf24" d="M197 242c15-1 29-6 40-14 3 3 6 6 8 9-11 13-27 19-45 18l-3-13Z" opacity="0.4"/>
-
-    <path fill="url(#scarf)" stroke="#020617" stroke-linejoin="round" stroke-width="4" d="M104 151c27 12 73 12 104-1 20 3 38 13 54 29-24 3-47 1-68-8-30 10-67 10-102-2l12-18Z"/>
-    <path fill="#facc15" d="M117 151c22 8 49 9 74 1-19 20-48 25-83 13l9-14Z" opacity="0.48"/>
-    <path fill="#fb7185" d="M206 154c17 5 33 14 48 26-21 1-41-2-60-9l12-17Z" opacity="0.52"/>
-
-    <path fill="#0b1120" stroke="#020617" stroke-linejoin="round" stroke-width="5" d="M116 83c8-30 31-47 60-42 32 6 51 31 48 64-2 29-23 54-58 56-39 3-59-29-50-78Z"/>
-    <path fill="url(#skin)" stroke="#020617" stroke-linejoin="round" stroke-width="4" d="M132 91c5-25 23-39 47-34 24 5 38 25 34 50-4 25-23 42-50 42-27-1-37-28-31-58Z"/>
-    <path fill="url(#hair)" d="M122 94c8-43 40-61 76-43 13 7 23 21 26 38-20-8-43-11-67-8-8 13-19 25-35 36-1-8-1-15 0-23Z"/>
-    <path fill="#f8fafc" d="M142 54c18-10 42-7 61 9-21-1-41 7-60 25l-1-34Z" opacity="0.68"/>
-    <path fill="#e2e8f0" d="M158 76c10-14 25-21 45-20-3 25-14 45-34 61 4-16 1-30-11-41Z" opacity="0.82"/>
-    <path fill="#94a3b8" d="M127 84c14-21 37-31 67-27-28 9-46 28-56 58-6-8-10-18-11-31Z" opacity="0.6"/>
-    <path fill="#0f172a" d="M140 108c9-5 19-5 28 0-8 4-17 4-28 0ZM177 106c10-5 20-4 29 2-10 4-19 3-29-2Z"/>
-    <path fill="#5eead4" d="M150 109c4-2 8-2 12 0-3 3-8 3-12 0ZM187 108c4-2 8-1 12 1-4 2-8 2-12-1Z"/>
-    <path fill="none" stroke="#a16207" stroke-linecap="round" stroke-width="2" d="M166 116c-2 5-1 9 3 12"/>
-    <path fill="none" stroke="#7f1d1d" stroke-linecap="round" stroke-width="2.4" d="M157 134c9 5 21 5 31-1"/>
-    <path fill="#f8fafc" d="M121 91c16-31 41-46 74-38-17 5-31 15-42 31 15-7 31-8 49-3-21 0-40 7-57 20-10 8-17 13-24 16-1-8-1-17 0-26Z" opacity="0.32"/>
-
-    <g filter="url(#softBloom)">
-      <circle cx="162" cy="230" r="39" fill="url(#coreGlow)" opacity="0.82"/>
-      <circle cx="162" cy="230" r="18" fill="#fef3c7"/>
-      <circle cx="162" cy="230" r="12" fill="#fbbf24"/>
-      <path fill="none" stroke="#5eead4" stroke-linecap="round" stroke-width="3" d="M132 230c11-18 49-18 60 0M132 230c10 20 50 20 60 0"/>
-      <path fill="none" stroke="#fef3c7" stroke-linecap="round" stroke-width="2" d="M162 207v46M139 230h46"/>
-    </g>
-
-    <path fill="#111827" stroke="#020617" stroke-linejoin="round" stroke-width="5" d="M111 364c16 8 32 12 49 12l-16 52h-37c-5-18-4-39 4-64Z"/>
-    <path fill="#111827" stroke="#020617" stroke-linejoin="round" stroke-width="5" d="M160 376c18 0 34-4 49-12 9 25 10 46 5 64h-37l-17-52Z"/>
-    <path fill="#334155" d="M107 416h38c-2 8-8 13-20 14-14 1-22-4-18-14ZM177 416h38c4 10-4 15-18 14-12-1-18-6-20-14Z"/>
-
-    <path fill="none" stroke="#fbbf24" stroke-linecap="round" stroke-width="4" d="M128 194c-5 39-7 91-3 156M197 194c5 39 7 91 3 156" opacity="0.72"/>
-    <path fill="none" stroke="#5eead4" stroke-linecap="round" stroke-width="3" d="M112 187c-12 44-15 92-9 144M216 187c12 44 15 92 9 144" opacity="0.45"/>
-
-    <g opacity="0.82">
-      <circle cx="88" cy="186" r="3" fill="#5eead4"/>
-      <circle cx="232" cy="205" r="4" fill="#fbbf24"/>
-      <circle cx="224" cy="118" r="2.5" fill="#5eead4"/>
-      <path fill="none" stroke="#5eead4" stroke-linecap="round" stroke-width="2" d="M225 115l11-12M230 205l14 8"/>
-    </g>
-  </g>
+  <!-- 邊光 -->
+  <path d="M74 70c-6 16-8 34-6 50" fill="none" stroke="#baf6ff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <path d="M76 184c-8 22-10 50-4 78" fill="none" stroke="#7fe9ff" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
 </svg>
